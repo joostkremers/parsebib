@@ -153,7 +153,7 @@ successful, point is placed right after the item's type, i.e.,
 generally on the opening brace or parenthesis following the entry
 type, \"@Comment\", \"@Preamble\" or \"@String\".
 
-The return value is the type of the entry. If no item is found,
+The return value is the type of the item. If no item is found,
 nil is returned and point is left at the end of the buffer.
 
 POS can be a number or a marker and defaults to point."
