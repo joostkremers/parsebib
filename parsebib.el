@@ -153,8 +153,12 @@ successful, point is placed right after the item's type, i.e.,
 generally on the opening brace or parenthesis following the entry
 type, \"@Comment\", \"@Preamble\" or \"@String\".
 
-The return value is the type of the item. If no item is found,
-nil is returned and point is left at the end of the buffer.
+The return value is the name of the item as a string, either
+\"Comment\", \"Preamble\" or \"String\". or the entry
+type (without the @). If an invalid item name is found, an error
+of type `parsebib-entry-type-error' is raised. If no item is
+found, nil is returned and point is left at the end of the
+buffer.
 
 POS can be a number or a marker and defaults to point."
   (when pos (goto-char pos))
