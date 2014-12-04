@@ -154,11 +154,11 @@ generally on the opening brace or parenthesis following the entry
 type, \"@Comment\", \"@Preamble\" or \"@String\".
 
 The return value is the name of the item as a string, either
-\"Comment\", \"Preamble\" or \"String\". or the entry
-type (without the @). If an invalid item name is found, an error
-of type `parsebib-entry-type-error' is raised. If no item is
-found, nil is returned and point is left at the end of the
-buffer.
+\"Comment\", \"Preamble\" or \"String\", or the entry
+type (without the @). If an item name is found that includes an
+illegal character, an error of type `parsebib-entry-type-error'
+is raised. If no item is found, nil is returned and point is left
+at the end of the buffer.
 
 POS can be a number or a marker and defaults to point."
   (when pos (goto-char pos))
