@@ -1,6 +1,6 @@
 ;;; parsebib.el --- A library for parsing bib files
 
-;; Copyright (c) 2003-2014 Joost Kremers
+;; Copyright (c) 2014 Joost Kremers
 ;; All rights reserved.
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
