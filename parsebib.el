@@ -139,7 +139,8 @@ file. Return nil if no dialect is found."
       (when (re-search-backward (concat parsebib-entry-start "comment") (- (point-max) 3000) t)
         (let ((comment (parsebib-read-comment)))
           (when (and comment
-                     (string-match-p "Local Variables:" comment)
+                     (string-match-p "\\`[ \n\t\r]*Local Variables:" comment)
+                     (string-match-p "End:[ \n\t\r]*\\'" comment)
                      (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
             (intern (match-string 1 comment))))))))
 
