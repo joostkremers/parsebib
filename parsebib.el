@@ -283,9 +283,9 @@ Return a cons (FIELD . VALUE), or NIL if no field was found."
               (cons field-type field-contents)))))))
 
 (defun parsebib--find-end-of-field (limit)
-  "Move POINT to the end of a field's contents and return POINT.
+  "Move point to the end of a field's contents and return point.
 The contents of a field is delimited by a comma or by the closing brace of
-the entry. The latter is at position LIMIT."
+the entry. The latter should be at position LIMIT."
   (while (and (not (eq (char-after) ?\,))
               (< (point) limit))
     (parsebib--match-delim-forward) ; check if we're on a delimiter and if so, jump to the matching closing delimiter
