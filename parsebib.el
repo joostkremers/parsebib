@@ -296,4 +296,4 @@ the entry. The latter should be at position LIMIT."
 
 (provide 'parsebib)
 
-;;; parsebib ends here
+;;; parsebib.el ends here
