@@ -46,7 +46,7 @@
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
 ;; Emacs 24.3 compatibility code.
-(if (version-list-< (version-to-list emacs-version) (24 4))
+(if (version-list-< (version-to-list emacs-version) '(24 4))
     (defun define-error (name message &optional parent)
       "Define NAME as a new error signal.
 MESSAGE is a string that will be output to the echo area if such an error
