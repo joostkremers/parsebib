@@ -302,7 +302,7 @@ Return a cons (FIELD . VALUE), or NIL if no field was found."
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[ \t\n\f]*=") 1)
           (let ((field-type (buffer-substring-no-properties beg (point))))
-            (skip-chars-forward "#%'(),=} \n\t\f" limit) ; move to the field contents
+            (skip-chars-forward "#%'()=} \n\t\f" limit) ; move to the field contents
             (let* ((beg (point))
                    (field-contents (buffer-substring-no-properties beg (parsebib--find-end-of-field limit))))
               (cons field-type field-contents)))))))
