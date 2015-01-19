@@ -290,7 +290,7 @@ type is valid."
                                while field collect field)))
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
-          fields)))))
+          (nreverse fields))))))
 
 (defun parsebib--find-bibtex-field (limit)
   "Find the field after point.
