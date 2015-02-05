@@ -40,6 +40,7 @@
 ;;; Code:
 
 (require 'bibtex)
+(require 'cl-lib)
 
 (defconst parsebib--bibtex-identifier "[^^\"@\\&$#%',={}() \t\n\f]*" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--key-regexp "[^^\"@\\&$#%',={} \t\n\f]*" "Regexp describing a licit key.")
