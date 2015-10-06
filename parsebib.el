@@ -76,7 +76,7 @@ Defaults to `error'."
 ;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib--looking-at-goto-end (str &optional match)
-  "Like `looking-at' but moves point to the end of the matching string.
+  "Like `looking-at' but move point to the end of the matching string STR.
 MATCH acts just like the argument to MATCH-END, and defaults to
 0. Comparison is done case-insensitively."
   (or match (setq match 0))
@@ -86,8 +86,8 @@ MATCH acts just like the argument to MATCH-END, and defaults to
 
 (defun parsebib--match-paren-forward ()
   "Move forward to the closing paren matching the opening paren at point.
-This function handles parentheses () and braces {}. Return t if a
-matching parenthesis was found. Note that this function puts
+This function handles parentheses () and braces {}.  Return t if a
+matching parenthesis was found.  Note that this function puts
 point right before the closing delimiter (unlike e.g.,
 `forward-sexp', which puts it right after.)"
   (let ((result (cond
@@ -156,7 +156,7 @@ point right before the closing delimiter (unlike e.g.,
   "Find the BibTeX dialect of a file if one is set.
 This function looks for a local value of the variable
 `bibtex-dialect' in the local variable block at the end of the
-file. Return nil if no dialect is found."
+file.  Return nil if no dialect is found."
   (save-excursion
     (goto-char (point-max))
     (let ((case-fold-search t))
@@ -173,7 +173,7 @@ file. Return nil if no dialect is found."
 
 This function simply searches for an @ at the start of a line,
 possibly preceded by spaces or tabs, followed by a string of
-characters as defined by `parsebib--bibtex-identifier'. When
+characters as defined by `parsebib--bibtex-identifier'.  When
 successful, point is placed right after the item's type, i.e.,
 generally on the opening brace or parenthesis following the entry
 type, \"@Comment\", \"@Preamble\" or \"@String\".
@@ -197,9 +197,9 @@ POS can be a number or a marker and defaults to point."
 Return value is the text of the @Comment or nil if no comment is
 found.
 
-POS can be a number or a marker. It does not have to be at the
+POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @Comment entry must start at the
-beginning of the line POS is on. If POS is nil, it defaults to
+beginning of the line POS is on.  If POS is nil, it defaults to
 point."
   (when pos (goto-char pos))
   (beginning-of-line)
@@ -212,11 +212,11 @@ point."
 (defun parsebib-read-string (&optional pos)
   "Read the @String definition beginning at the line POS is on.
 If a proper abbreviation and string are found, they are returned
-as a cons cell (<abbrev> . <string>). Otherwise, nil is returned.
+as a cons cell (<abbrev> . <string>).  Otherwise, nil is returned.
 
-POS can be a number or a marker. It does not have to be at the
+POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @String entry must start at the
-beginning of the line POS is on. If POS is nil, it defaults to
+beginning of the line POS is on.  If POS is nil, it defaults to
 point."
   (when pos (goto-char pos))
   (beginning-of-line)
@@ -242,9 +242,9 @@ point."
   "Read the @Preamble definition at the line POS is on.
 Return the preamble as a string, or nil if none was found.
 
-POS can be a number or a marker. It does not have to be at the
+POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @Preamble must start at the
-beginning of the line POS is on. If POS is nil, it defaults to
+beginning of the line POS is on.  If POS is nil, it defaults to
 point."
   (when pos (goto-char pos))
   (beginning-of-line)
@@ -255,17 +255,17 @@ point."
         (buffer-substring-no-properties beg (point))))))
 
 (defun parsebib-read-entry (type &optional pos)
-  "Read a BibTeX entry at the line POS is on.
+  "Read a BibTeX entry of type TYPE at the line POS is on.
 
-The entry should be of type TYPE (a string, not containing the @
-sign). The return value is the entry as an alist of (<field> .
-<contents>) cons pairs, or nil if no entry was found. In this
+TYPE should be a string and should not contain the @
+sign.  The return value is the entry as an alist of (<field> .
+<contents>) cons pairs, or nil if no entry was found.  In this
 alist, the entry key is provided in the field \"=key=\" and the
 entry type in the field \"=type=\".
 
-POS can be a number or a marker. It does not have to be at the
+POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the entry must start at the beginning of
-the line POS is on. If POS is nil, it defaults to point.
+the line POS is on.  If POS is nil, it defaults to point.
 
 ENTRY should not be \"Comment\", \"Preamble\" or \"String\", but
 is otherwise not limited to any set of possible entry types. If
@@ -295,7 +295,8 @@ type is valid."
 
 (defun parsebib--find-bibtex-field (limit)
   "Find the field after point.
-Return a cons (FIELD . VALUE), or NIL if no field was found."
+Do not search beyond LIMIT (a buffer position).  Return a
+cons (FIELD . VALUE), or nil if no field was found."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; move to the first char of the field name
   (unless (>= (point) limit)   ; if we haven't reached the end of the entry
     (let ((beg (point)))
@@ -309,7 +310,7 @@ Return a cons (FIELD . VALUE), or NIL if no field was found."
 (defun parsebib--find-end-of-field (limit)
   "Move point to the end of a field's contents and return point.
 The contents of a field is delimited by a comma or by the closing brace of
-the entry. The latter should be at position LIMIT."
+the entry.  The latter should be at position LIMIT."
   (while (and (not (eq (char-after) ?\,))
               (< (point) limit))
     (parsebib--match-delim-forward) ; check if we're on a delimiter and if so, jump to the matching closing delimiter
