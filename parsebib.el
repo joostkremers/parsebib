@@ -187,7 +187,7 @@ at the end of the buffer.
 
 POS can be a number or a marker and defaults to point."
   (when pos (goto-char pos))
-  (when (re-search-forward parsebib--entry-start nil 0) 
+  (when (re-search-forward parsebib--entry-start nil 0)
     (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]") 1)
         (match-string 1)
       (signal 'parsebib-entry-type-error (list (point))))))
