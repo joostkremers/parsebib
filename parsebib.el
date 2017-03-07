@@ -211,8 +211,9 @@ point."
 
 (defun parsebib-read-string (&optional pos)
   "Read the @String definition beginning at the line POS is on.
-If a proper abbreviation and string are found, they are returned
-as a cons cell (<abbrev> . <string>).  Otherwise, nil is returned.
+If a proper abbreviation and expansion are found, they are
+returned as a cons cell (<abbrev> . <expansion>).  Otherwise, nil
+is returned.
 
 POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @String entry must start at the
@@ -231,12 +232,12 @@ point."
                        (buffer-substring-no-properties beg (point))
                      nil)))
         (when (and abbr (> (length abbr) 0)) ; if we found an abbrev
-          (skip-chars-forward "^\"{" limit) ; move forward to the definition
-          (let* ((beg (point))              ; read the definition
-                 (string (if (parsebib--match-delim-forward)
-                             (buffer-substring-no-properties beg (1+ (point))))))
-            (and string (> (length string) 0)
-                 (cons abbr string))))))))
+          (skip-chars-forward "^\"{" limit) ; move forward to the expansion
+          (let* ((beg (point))              ; read the expansion
+                 (expansion (if (parsebib--match-delim-forward)
+                                (buffer-substring-no-properties beg (1+ (point))))))
+            (and expansion (> (length expansion) 0)
+                 (cons abbr expansion))))))))
 
 (defun parsebib-read-preamble (&optional pos)
   "Read the @Preamble definition at the line POS is on.
