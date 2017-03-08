@@ -209,7 +209,13 @@ point."
       (when (parsebib--match-paren-forward)
         (buffer-substring-no-properties beg (point))))))
 
-(defun parsebib-read-string (&optional pos)
+(defun parsebib-replace-strings (val strings)
+  "Replaces strings in VAL using (key, value) pairs from hash table STRINGS."
+  (replace-regexp-in-string "\"" "" (string-join (mapcar
+                                                  (lambda (x) (if strings (gethash x strings x) x))
+                                                  (split-string val " # " t)))))
+
+(defun parsebib-read-string (&optional pos strings)
   "Read the @String definition beginning at the line POS is on.
 If a proper abbreviation and expansion are found, they are
 returned as a cons cell (<abbrev> . <expansion>).  Otherwise, nil
@@ -218,26 +224,29 @@ is returned.
 POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @String entry must start at the
 beginning of the line POS is on.  If POS is nil, it defaults to
-point."
+point.
+
+If STRINGS is provided it is assumed to be a hash table passed to
+parsebib-replace-strings."
   (when pos (goto-char pos))
   (beginning-of-line)
   (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "string[[:space:]]*[\(\{]"))
-    (let ((limit (save-excursion ; find the position of the matching end parenthesis
+    (let ((limit (save-excursion        ; find the position of the matching end parenthesis
                    (forward-char -1)
                    (parsebib--match-paren-forward)
                    (point))))
-      (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; move up to the abbrev
-      (let* ((beg (point))                            ; read the abbrev
+      (skip-chars-forward "#%'(),={} \n\t\f" limit) ; move up to the abbrev
+      (let* ((beg (point))                          ; read the abbrev
              (abbr (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[ \t\n\f]*=") 1)
                        (buffer-substring-no-properties beg (point))
                      nil)))
-        (when (and abbr (> (length abbr) 0)) ; if we found an abbrev
-          (skip-chars-forward "^\"{" limit) ; move forward to the expansion
-          (let* ((beg (point))              ; read the expansion
-                 (expansion (if (parsebib--match-delim-forward)
-                                (buffer-substring-no-properties beg (1+ (point))))))
-            (and expansion (> (length expansion) 0)
-                 (cons abbr expansion))))))))
+        (when (and abbr (> (length abbr) 0))            ; if we found an abbrev
+          (skip-chars-forward "#%'(),={} \n\t\f" limit) ; move forward to the expansion
+          (let* ((beg (point))                          ; read the expansion
+                 (expansion (parsebib-replace-strings
+                             (buffer-substring-no-properties beg limit)
+                             strings)))
+            (cons abbr expansion)))))))
 
 (defun parsebib-read-preamble (&optional pos)
   "Read the @Preamble definition at the line POS is on.
@@ -255,7 +264,7 @@ point."
       (when (parsebib--match-paren-forward)
         (buffer-substring-no-properties beg (point))))))
 
-(defun parsebib-read-entry (type &optional pos)
+(defun parsebib-read-entry (type &optional pos strings)
   "Read a BibTeX entry of type TYPE at the line POS is on.
 
 TYPE should be a string and should not contain the @
@@ -271,7 +280,10 @@ the line POS is on.  If POS is nil, it defaults to point.
 ENTRY should not be \"Comment\", \"Preamble\" or \"String\", but
 is otherwise not limited to any set of possible entry types. If
 so required, the calling function has to ensure that the entry
-type is valid."
+type is valid.
+
+If STRINGS is provided it is assumed to be a hash table passed to
+parsebib-replace-strings."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
     (when pos (goto-char pos))
     (beginning-of-line)
@@ -288,25 +300,28 @@ type is valid."
                     (buffer-substring-no-properties beg (point)))))
         (or key (setq key "")) ; if no key was found, we pretend it's empty and try to read the entry anyway
         (skip-chars-forward "^," limit) ; move to the comma after the entry key
-        (let ((fields (cl-loop for field = (parsebib--find-bibtex-field limit)
+        (let ((fields (cl-loop for field = (parsebib--find-bibtex-field limit strings)
                                while field collect field)))
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
           (nreverse fields))))))
 
-(defun parsebib--find-bibtex-field (limit)
+(defun parsebib--find-bibtex-field (limit &optional strings)
   "Find the field after point.
 Do not search beyond LIMIT (a buffer position).  Return a
-cons (FIELD . VALUE), or nil if no field was found."
+cons (FIELD . VALUE), or nil if no field was found.
+
+If STRINGS is provided it is assumed to be a hash table passed to
+parsebib-replace-strings."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; move to the first char of the field name
-  (unless (>= (point) limit)   ; if we haven't reached the end of the entry
+  (unless (>= (point) limit)                      ; if we haven't reached the end of the entry
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[ \t\n\f]*=") 1)
           (let ((field-type (buffer-substring-no-properties beg (point))))
             (skip-chars-forward "#%'()=} \n\t\f" limit) ; move to the field contents
             (let* ((beg (point))
                    (field-contents (buffer-substring-no-properties beg (parsebib--find-end-of-field limit))))
-              (cons field-type field-contents)))))))
+              (cons field-type (parsebib-replace-strings field-contents strings))))))))
 
 (defun parsebib--find-end-of-field (limit)
   "Move point to the end of a field's contents and return point.
