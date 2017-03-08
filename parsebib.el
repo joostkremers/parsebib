@@ -320,6 +320,73 @@ the entry.  The latter should be at position LIMIT."
       (skip-chars-backward " \n\t\f"))
   (point))
 
+(defun parsebib-collect-strings (&optional hash)
+  "Collect all @String definitions in the current buffer.
+Return value is a hash with the abbreviations as keys and the
+expansions as values.  If HASH is a hash table, the abbeviations
+are stored there instead and nil is returned.  Note that HASH
+should use `equal' as its test function."
+  (save-excursion
+    (goto-char (point-min))
+    (let* ((res (if (and (hash-table-p hash)
+                         (eq 'equal (hash-table-test hash)))
+                    hash
+                  (make-hash-table :test #'equal)))
+           string)
+      (cl-loop for item = (parsebib-find-next-item)
+               while item do
+               (when (cl-equalp item "string")
+                 (setq string (parsebib-read-string))
+                 (puthash (car string) (cdr string) res)))
+      (unless hash
+        res))))
+
+(defun parsebib-collect-preambles ()
+  "Collect all @Preamble definitions in the current buffer.
+Return a list of strings, each string a separate @Preamble."
+  (save-excursion
+    (goto-char (point-min))
+    (let (res)
+      (cl-loop for item = (parsebib-find-next-item)
+               while item do
+               (when (cl-equalp item "preamble")
+                 (push (parsebib-read-preamble) res)))
+      (nreverse res))))
+
+(defun parsebib-collect-comments ()
+  "Collect all @Comment definitions in the current buffer.
+Return a list of strings, each string a separate @Comment."
+  (save-excursion
+    (goto-char (point-min))
+    (let (res)
+      (cl-loop for item = (parsebib-find-next-item)
+               while item do
+               (when (cl-equalp item "comment")
+                 (push (parsebib-read-comment) res)))
+      (nreverse res))))
+
+(defun parsebib-collect-entries (&optional hash)
+  "Collect all entries is the current buffer.
+Return value is a hash table containing the entries.  If HASH is
+a hash table, the entries are stored there instead and nil is
+returned.  Note that HASH should use `equal' as its test
+function."
+  (save-excursion
+    (goto-char (point-min))
+    (let* ((res (if (and (hash-table-p hash)
+                         (eq 'equal (hash-table-test hash)))
+                    hash
+                  (make-hash-table :test #'equal)))
+           entry)
+      (cl-loop for entry-type = (parsebib-find-next-item)
+               while entry-type do
+               (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
+                 (setq entry (parsebib-read-entry entry-type))
+                 (if entry
+                     (puthash (cdr (assoc-string "=key=" entry)) entry res))))
+      (unless hash
+        res))))
+
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
