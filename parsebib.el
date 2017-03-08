@@ -1,4 +1,4 @@
-;;; parsebib.el --- A library for parsing bib files
+;;; parsebib.el --- A library for parsing bib files  -*- lexical-binding: t -*-
 
 ;; Copyright (c) 2014 Joost Kremers
 ;; All rights reserved.
