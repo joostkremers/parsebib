@@ -210,7 +210,7 @@ point."
         (buffer-substring-no-properties beg (point))))))
 
 (defun parsebib-replace-strings (val strings)
-  "Replaces strings in VAL using (key, value) pairs from hash table STRINGS."
+  "Replace strings in VAL using (key, value) pairs from hash table STRINGS."
   (replace-regexp-in-string "\"" "" (string-join (mapcar
                                                   (lambda (x) (if strings (gethash x strings x) x))
                                                   (split-string val " # " t)))))
