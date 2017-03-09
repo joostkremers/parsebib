@@ -152,22 +152,6 @@ point right before the closing delimiter (unlike e.g.,
 ;; parsing a bib file ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun parsebib-find-bibtex-dialect ()
-  "Find the BibTeX dialect of a file if one is set.
-This function looks for a local value of the variable
-`bibtex-dialect' in the local variable block at the end of the
-file.  Return nil if no dialect is found."
-  (save-excursion
-    (goto-char (point-max))
-    (let ((case-fold-search t))
-      (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
-        (let ((comment (parsebib-read-comment)))
-          (when (and comment
-                     (string-match-p "\\`[ \n\t\r]*Local Variables:" comment)
-                     (string-match-p "End:[ \n\t\r]*\\'" comment)
-                     (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
-            (intern (match-string 1 comment))))))))
-
 (defun parsebib-find-next-item (&optional pos)
   "Find the first (potential) BibTeX item following POS.
 
@@ -401,6 +385,22 @@ function."
                      (puthash (cdr (assoc-string "=key=" entry)) entry res))))
       (unless hash
         res))))
+
+(defun parsebib-find-bibtex-dialect ()
+  "Find the BibTeX dialect of a file if one is set.
+This function looks for a local value of the variable
+`bibtex-dialect' in the local variable block at the end of the
+file.  Return nil if no dialect is found."
+  (save-excursion
+    (goto-char (point-max))
+    (let ((case-fold-search t))
+      (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
+        (let ((comment (parsebib-read-comment)))
+          (when (and comment
+                     (string-match-p "\\`[ \n\t\r]*Local Variables:" comment)
+                     (string-match-p "End:[ \n\t\r]*\\'" comment)
+                     (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
+            (intern (match-string 1 comment))))))))
 
 (provide 'parsebib)
 
