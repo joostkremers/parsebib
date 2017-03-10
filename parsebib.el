@@ -211,26 +211,23 @@ beginning of a line, but the @String entry must start at the
 beginning of the line POS is on.  If POS is nil, it defaults to
 point.
 
-If STRINGS is provided it is assumed to be a hash table passed to
-parsebib-replace-strings."
+If STRINGS is provided it should be a hash table with string
+abbreviations, which are used to expand abbrevs in the string's
+expansion."
+  (interactive)
   (when pos (goto-char pos))
   (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "string[[:space:]]*[\(\{]"))
+  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(string[[:space:]]*\\)[\(\{]") 1)
     (let ((limit (save-excursion        ; find the position of the matching end parenthesis
-                   (forward-char -1)
                    (parsebib--match-paren-forward)
                    (point))))
-      (skip-chars-forward "#%'(),={} \n\t\f" limit) ; move up to the abbrev
-      (let* ((beg (point))                          ; read the abbrev
-             (abbr (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[ \t\n\f]*=") 1)
-                       (buffer-substring-no-properties beg (point))
-                     nil)))
+      (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
+      (let ((abbr (match-string-no-properties 1)))
         (when (and abbr (> (length abbr) 0))            ; if we found an abbrev
-          (skip-chars-forward "#%'(),={} \n\t\f" limit) ; move forward to the expansion
-          (let* ((beg (point))                          ; read the expansion
-                 (expansion (parsebib-replace-strings
-                             (buffer-substring-no-properties beg limit)
-                             strings)))
+          (let ((expansion (parsebib-replace-strings
+                            (buffer-substring-no-properties (point) limit)
+                            strings)))
+            (goto-char (1+ limit))
             (cons abbr expansion)))))))
 
 (defun parsebib-read-preamble (&optional pos)
