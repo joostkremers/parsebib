@@ -267,8 +267,9 @@ is otherwise not limited to any set of possible entry types. If
 so required, the calling function has to ensure that the entry
 type is valid.
 
-If STRINGS is provided it is assumed to be a hash table passed to
-parsebib-replace-strings."
+If STRINGS is provided it should be a hash table with string
+abbreviations, which are used to expand abbrevs in the entry's
+fields."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
     (when pos (goto-char pos))
     (beginning-of-line)
@@ -296,8 +297,9 @@ parsebib-replace-strings."
 Do not search beyond LIMIT (a buffer position).  Return a
 cons (FIELD . VALUE), or nil if no field was found.
 
-If STRINGS is provided it is assumed to be a hash table passed to
-parsebib-replace-strings."
+If STRINGS is provided it should be a hash table with string
+abbreviations, which are used to expand abbrevs in the field's
+value."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; move to the first char of the field name
   (unless (>= (point) limit)                      ; if we haven't reached the end of the entry
     (let ((beg (point)))
