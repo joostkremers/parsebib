@@ -385,6 +385,49 @@ in the entries."
                      (puthash (cdr (assoc-string "=key=" entry)) entry res))))
       hash)))
 
+(defun parsebib-parse-buffer (&optional entries-hash strings-hash expand-strings)
+  "Parse the current buffer and return all BibTeX data.
+Return list of four elements: a hash table with the entries, a
+hash table with the @String definitions, a list of @Preamble
+definitions, and a list of @Comments.
+
+If ENTRIES-HASH is a hash table with test function `equal', it is
+used to store the entries.  Any existing entries with identical
+keys are overwritten.  Similarly, if STRINGS-HASH is a hash table
+with test function `equal', the @String definitions are stored in
+it.
+
+If EXPAND-STRINGS is non-nil, abbreviations in the entries and
+@String definitions are expanded using the @String definitions
+already in STRINGS."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((entries (if (and (hash-table-p entries-hash)
+                            (eq (hash-table-test entries-hash) 'equal))
+                       entries-hash
+                     (make-hash-table :test #'equal)))
+          (strings (if (and (hash-table-p strings-hash)
+                            (eq (hash-table-test strings-hash) 'equal))
+                       strings-hash
+                     (make-hash-table :test #'equal)))
+          preambles comments)
+      (cl-loop for item = (parsebib-find-next-item)
+               while item do
+               (cond
+                ((cl-equalp item "string") ; `cl-equalp' compares strings case-insensitively.
+                 (let ((string (parsebib-read-string nil (if expand-strings strings))))
+                   (if string
+                       (puthash (car string) (cdr string) strings))))
+                ((cl-equalp item "preamble")
+                 (push (parsebib-read-preamble) preambles))
+                ((cl-equalp item "comment")
+                 (push (parsebib-read-comment) comments))
+                ((stringp item)
+                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings))))
+                   (when entry
+                     (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
+      (list entries strings preambles comments))))
+
 (defun parsebib-find-bibtex-dialect ()
   "Find the BibTeX dialect of a file if one is set.
 This function looks for a local value of the variable
