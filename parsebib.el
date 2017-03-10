@@ -120,19 +120,13 @@ point right before the closing delimiter (unlike e.g.,
 (defun parsebib--match-delim-forward ()
   "Move forward to the closing delimiter matching the delimiter at point.
 This function handles braces {} and double quotes \"\". Return t
-if a matching delimiter was found. Note that this function puts
-point right before the closing delimiter (unlike e.g.,
-`forward-sexp', which puts it right after.)"
+if a matching delimiter was found."
   (let ((result (cond
                  ((eq (char-after) ?\{)
                   (parsebib--match-brace-forward))
                  ((eq (char-after) ?\")
                   (parsebib--match-quote-forward)))))
-    (when result
-      ;; move point one char back to place it where the rest of parsebib expects it
-      (forward-char -1)
-      ;; make sure we return t
-      result)))
+    result))
 
 (defun parsebib--match-brace-forward ()
   "Move forward to the closing brace matching the opening brace at point."
