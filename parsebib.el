@@ -210,10 +210,21 @@ point."
         (buffer-substring-no-properties beg (point))))))
 
 (defun parsebib-replace-strings (val strings)
-  "Replaces strings in VAL using (key, value) pairs from hash table STRINGS."
-  (replace-regexp-in-string "\"" "" (string-join (mapcar
-                                                  (lambda (x) (if strings (gethash x strings x) x))
-                                                  (split-string val " # " t)))))
+  "Replaces strings in VAL using (key, value) pairs from hash table STRINGS.
+
+If STRINGS is nil then VAL is returned verbatim."
+  (if strings
+      (concat "\""
+              (string-join (mapcar
+                            (lambda (x)
+                              (let ((y
+                                     (replace-regexp-in-string
+                                      "[{}]" "" (replace-regexp-in-string
+                                                 "\"" "" x))))
+                                (if strings (gethash y strings y) y)))
+                            (split-string val " *# *"  t)))
+              "\"")
+    val))
 
 (defun parsebib-read-string (&optional pos strings)
   "Read the @String definition beginning at the line POS is on.
@@ -240,7 +251,7 @@ parsebib-replace-strings."
                        (buffer-substring-no-properties beg (point))
                      nil)))
         (when (and abbr (> (length abbr) 0))            ; if we found an abbrev
-          (skip-chars-forward "#%'(),={} \n\t\f" limit) ; move forward to the definition
+          (skip-chars-forward "#%'(),= \n\t\f" limit) ; move forward to the definition
           (let* ((beg (point))                          ; read the definition
                  (string (parsebib-replace-strings
                           (buffer-substring-no-properties beg limit)
