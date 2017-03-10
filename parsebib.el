@@ -41,6 +41,7 @@
 
 (require 'bibtex)
 (require 'cl-lib)
+(require 'subr-x) ; for `string-join'.
 
 (defconst parsebib--bibtex-identifier "[^^\"@\\&$#%',={}() \t\n\f]*" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--key-regexp "[^^\"@\\&$#%',={} \t\n\f]*" "Regexp describing a licit key.")
