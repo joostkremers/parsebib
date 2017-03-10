@@ -142,6 +142,38 @@ if a matching delimiter was found."
     ;; if forward-sexp does not result in an error, we want to return t
     t))
 
+(defun parsebib--parse-value (limit &optional strings)
+  "Parse value at point.
+Do not parse beyond LIMIT.  Replace @string abbrevs with STRINGS
+if non-nil."
+  (let (res)
+    (while (and (< (point) limit)
+                (not (looking-at-p ",")))
+      (cond
+       ((looking-at-p "[{\"]")
+        (let ((beg (point)))
+          (parsebib--match-delim-forward)
+          (push (buffer-substring-no-properties beg (point)) res)))
+       ((looking-at parsebib--bibtex-identifier)
+        (push (buffer-substring-no-properties (point) (match-end 0)) res)
+        (goto-char (match-end 0)))
+       ((looking-at "[[:space:]]*#[[:space:]]*")
+        (goto-char (match-end 0)))
+       (t (forward-char 1)))) ; so as not to get stuck in an infinite loop.
+    (if strings
+        (string-join (parsebib--expand-strings (nreverse res) strings))
+      (string-join (nreverse res) " # "))))
+
+(defun parsebib--expand-strings (strings abbrevs)
+  "Replace STRINGS with expansions in ABBREVS."
+  (mapcar (lambda (str)
+            (or (gethash str abbrevs)
+                (cond
+                 ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
+                  (match-string 1 str))
+                 ((string-match "[0-9]+" str)
+                  str))))
+          strings))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; parsing a bib file ;;
@@ -188,14 +220,6 @@ point."
       (when (parsebib--match-paren-forward)
         (buffer-substring-no-properties beg (point))))))
 
-(defun parsebib-replace-strings (val strings)
-  "Replace strings in VAL using (key, value) pairs from hash table STRINGS."
-  (if (not strings)
-      val
-    (replace-regexp-in-string "\"" "" (string-join (mapcar
-                                                    (lambda (x) (if strings (gethash x strings x) x))
-                                                    (split-string val " # " t))))))
-
 (defun parsebib-read-string (&optional pos strings)
   "Read the @String definition beginning at the line POS is on.
 If a proper abbreviation and expansion are found, they are
@@ -220,9 +244,7 @@ expansion."
       (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
       (let ((abbr (match-string-no-properties 1)))
         (when (and abbr (> (length abbr) 0))            ; if we found an abbrev
-          (let ((expansion (parsebib-replace-strings
-                            (buffer-substring-no-properties (point) limit)
-                            strings)))
+          (let ((expansion (parsebib--parse-value limit strings)))
             (goto-char (1+ limit))
             (cons abbr expansion)))))))
 
@@ -296,24 +318,10 @@ value."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; move to the first char of the field name
   (unless (>= (point) limit)                      ; if we haven't reached the end of the entry
     (let ((beg (point)))
-      (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[ \t\n\f]*=") 1)
+      (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let ((field-type (buffer-substring-no-properties beg (point))))
-            (skip-chars-forward "#%'()=} \n\t\f" limit) ; move to the field contents
-            (let* ((beg (point))
-                   (field-contents (buffer-substring-no-properties beg (parsebib--find-end-of-field limit))))
-              (cons field-type (parsebib-replace-strings field-contents strings))))))))
-
-(defun parsebib--find-end-of-field (limit)
-  "Move point to the end of a field's contents and return point.
-The contents of a field is delimited by a comma or by the closing brace of
-the entry.  The latter should be at position LIMIT."
-  (while (and (not (eq (char-after) ?\,))
-              (< (point) limit))
-    (parsebib--match-delim-forward) ; check if we're on a delimiter and if so, jump to the matching closing delimiter
-    (forward-char 1))
-  (if (= (point) limit)
-      (skip-chars-backward " \n\t\f"))
-  (point))
+            (let ((field-contents (parsebib--parse-value limit strings)))
+              (cons field-type field-contents)))))))
 
 (defun parsebib-collect-strings (&optional hash)
   "Collect all @String definitions in the current buffer.
