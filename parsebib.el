@@ -196,9 +196,11 @@ point."
 
 (defun parsebib-replace-strings (val strings)
   "Replace strings in VAL using (key, value) pairs from hash table STRINGS."
-  (replace-regexp-in-string "\"" "" (string-join (mapcar
-                                                  (lambda (x) (if strings (gethash x strings x) x))
-                                                  (split-string val " # " t)))))
+  (if (not strings)
+      val
+    (replace-regexp-in-string "\"" "" (string-join (mapcar
+                                                    (lambda (x) (if strings (gethash x strings x) x))
+                                                    (split-string val " # " t))))))
 
 (defun parsebib-read-string (&optional pos strings)
   "Read the @String definition beginning at the line POS is on.
