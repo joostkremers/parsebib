@@ -168,11 +168,13 @@ if non-nil."
   "Replace STRINGS with expansions in ABBREVS."
   (mapcar (lambda (str)
             (or (gethash str abbrevs)
-                (cond
-                 ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
-                  (match-string 1 str))
-                 ((string-match "[0-9]+" str)
-                  str))))
+                (progn (setq str (replace-regexp-in-string "[ \t\n\f]+" " " str))
+                       (cond
+                        ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
+                         (match-string 1 str))
+                        ((string-match "[0-9]+" str)
+                         str)
+                        (t str)))))
           strings))
 
 ;;;;;;;;;;;;;;;;;;;
