@@ -144,8 +144,15 @@ if a matching delimiter was found."
 
 (defun parsebib--parse-value (limit &optional strings)
   "Parse value at point.
-Do not parse beyond LIMIT.  Replace @string abbrevs with STRINGS
-if non-nil."
+A value is either a field value or a @String expansion.  Return
+the value as a string.  No parsing is done beyond LIMIT, but note
+that parsing may stop well before LIMIT.
+
+STRINGS, if non-nil, is a hash table of @String definitions.
+@String abbrevs in the value to be parsed are then replaced with
+their expansions.  Additionally, newlines in field values are
+removed, white space is reduced to a single space and braces or
+double quotes around field values are removed."
   (let (res)
     (while (and (< (point) limit)
                 (not (looking-at-p ",")))
