@@ -394,11 +394,29 @@ in the entries."
                      (puthash (cdr (assoc-string "=key=" entry)) entry res))))
       hash)))
 
+
+(defun parsebib-find-bibtex-dialect ()
+  "Find the BibTeX dialect of a file if one is set.
+This function looks for a local value of the variable
+`bibtex-dialect' in the local variable block at the end of the
+file.  Return nil if no dialect is found."
+  (save-excursion
+    (goto-char (point-max))
+    (let ((case-fold-search t))
+      (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
+        (let ((comment (parsebib-read-comment)))
+          (when (and comment
+                     (string-match-p "\\`[ \n\t\r]*Local Variables:" comment)
+                     (string-match-p "End:[ \n\t\r]*\\'" comment)
+                     (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
+            (intern (match-string 1 comment))))))))
+
 (defun parsebib-parse-buffer (&optional entries-hash strings-hash expand-strings)
   "Parse the current buffer and return all BibTeX data.
-Return list of four elements: a hash table with the entries, a
+Return list of five elements: a hash table with the entries, a
 hash table with the @String definitions, a list of @Preamble
-definitions, and a list of @Comments.
+definitions, a list of @Comments and the BibTeX dialect, if
+present in the file.
 
 If ENTRIES-HASH is a hash table with test function `equal', it is
 used to store the entries.  Any existing entries with identical
@@ -435,23 +453,7 @@ already in STRINGS."
                  (let ((entry (parsebib-read-entry item nil (if expand-strings strings))))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
-      (list entries strings preambles comments))))
-
-(defun parsebib-find-bibtex-dialect ()
-  "Find the BibTeX dialect of a file if one is set.
-This function looks for a local value of the variable
-`bibtex-dialect' in the local variable block at the end of the
-file.  Return nil if no dialect is found."
-  (save-excursion
-    (goto-char (point-max))
-    (let ((case-fold-search t))
-      (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
-        (let ((comment (parsebib-read-comment)))
-          (when (and comment
-                     (string-match-p "\\`[ \n\t\r]*Local Variables:" comment)
-                     (string-match-p "End:[ \n\t\r]*\\'" comment)
-                     (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
-            (intern (match-string 1 comment))))))))
+      (list entries strings preambles comments (parsebib-find-bibtex-dialect)))))
 
 (provide 'parsebib)
 
