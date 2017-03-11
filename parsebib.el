@@ -181,7 +181,6 @@ if non-nil."
 
 (defun parsebib-find-next-item (&optional pos)
   "Find the first (potential) BibTeX item following POS.
-
 This function simply searches for an @ at the start of a line,
 possibly preceded by spaces or tabs, followed by a string of
 characters as defined by `parsebib--bibtex-identifier'.  When
@@ -266,7 +265,6 @@ point."
 
 (defun parsebib-read-entry (type &optional pos strings)
   "Read a BibTeX entry of type TYPE at the line POS is on.
-
 TYPE should be a string and should not contain the @
 sign.  The return value is the entry as an alist of (<field> .
 <contents>) cons pairs, or nil if no entry was found.  In this
