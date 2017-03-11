@@ -20,7 +20,7 @@ Collect all entries in the current buffer and returns them as a hash table, wher
 
 The variable `hash` can be used to pass a hash table in which the entries are stored. This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file. If an entry is read from the buffer that has the same key as an entry in `hash`, the new entry overrides the old one.
 
-The variable `strings` is a hash table of `@string` definitions, where the keys are the `@string` abbreviations and the values their expansions. If the variable `strings` is present, abbreviations occurring in the field values of the entries being read are expanded. Furthermore, the (outer) braces or double quotes are removed from field values.
+The variable `strings` is a hash table of `@string` definitions, where the keys are the `@string` abbreviations and the values their expansions. If the variable `strings` is present, abbreviations occurring in the field values of the entries being read are expanded. Furthermore, the (outer) braces or double quotes are removed from field values and newlines and sequences of spaces are reduced to a single space.
 
 
 ### `parsebib-collect-strings (&optional hash expand-strings)` ###
@@ -72,7 +72,7 @@ Find the first BibTeX item following point, where an item is either an entry, or
 ### `parsebib-read-preamble (&optional pos)` ###
 ### `parsebib-read-comment (&optional pos)` ###
 
-These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebiib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` expansions or in field values are expanded. Furthermore, the outermost braces or double quotes are removed. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
+These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebiib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` expansions or in field values are expanded. Furthermore, the outermost braces or double quotes are removed and newlines and sequences of white space are reduced to a single space. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
 
 The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. The alist contains an element with the key `=type=`, which holds the entry type, and an element with the key `=key=`, which holds the entry key. All functions move point to the end of the entry.
 
