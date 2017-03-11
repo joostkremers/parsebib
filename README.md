@@ -67,10 +67,10 @@ The lower-level API consists of functions that do the actual reading of a BibTeX
 
 Find the first BibTeX item following point, where an item is either an entry, or a `@Preamble`, `@String`, or `@Comment`. This function returns the item's type as a string, i.e., either `"preamble"`, `"string"`, or `"comment"`, or the entry type. Note that the `@` is *not* part of the returned string. This function moves point into the correct position to start reading the actual contents of the item, which is done by one of the following functions.
 
-### `parsebib-read-string` (&optional pos strings) ###
-### `parsebib-read-entry` (type &optional pos strings) ###
-### `parsebib-read-preamble` (&optional pos) ###
-### `parsebib-read-comment` (&optional pos) ###
+### `parsebib-read-string (&optional pos strings)` ###
+### `parsebib-read-entry (type &optional pos strings)` ###
+### `parsebib-read-preamble (&optional pos)` ###
+### `parsebib-read-comment (&optional pos)` ###
 
 These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebiib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` expansions or in field values are expanded. Furthermore, the outermost braces or double quotes are removed. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
 
