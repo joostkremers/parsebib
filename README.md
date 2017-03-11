@@ -14,7 +14,7 @@ Higher-level API
 The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point.
 
 
-## `parsebib-collect-entries (&optional hash strings)`  ##
+### `parsebib-collect-entries (&optional hash strings)` ###
 
 Collect all entries in the current buffer and returns them as a hash table, where the keys correspond to the BibTeX keys and the values are alists consisting of `(<field> . <value>)` pairs of the relevant entries. In this alist, the BibTeX key and the entry type are stored under `=key=` and `=type=`, respectively.
 
@@ -23,29 +23,29 @@ The variable `hash` can be used to pass a hash table in which the entries are st
 The variable `strings` is a hash table of `@string` definitions, where the keys are the `@string` abbreviations and the values their expansions. If the variable `strings` is present, abbreviations occurring in the field values of the entries being read are expanded. Furthermore, the (outer) braces or double quotes are removed from field values.
 
 
-## `parsebib-collect-strings (&optional hash expand-strings)`## 
+### `parsebib-collect-strings (&optional hash expand-strings)`## ###
 
 Collect all `@string` definitions in the current buffer. Again, the variable `hash` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created and returned.
 
 The argument `expand-strings` is a boolean value. If non-nil, any abbreviations found in the string expansions are expanded. You do not need to pass a hash table to the function for this to work. Every `@string` definition is added to the hash table as soon as it is read, which means that a `@string` definition can use an expansion defined earlier in the same file.
 
 
-## `parsebib-collect-preambles` ##
+### `parsebib-collect-preambles` ###
 
 Collect all `@preamble` definitions in the current buffer and return them as a list.
 
 
-## `parsebib-collect-comments` ##
+### `parsebib-collect-comments` ###
 
 Collect all `@comments` in the current buffer and return them as a list.
 
 
-## `parsebib-find-bibtex-dialect` ##
+### `parsebib-find-bibtex-dialect` ###
 
 Find and return the BibTeX dialect for the current buffer. The BibTeX dialect is either `BibTeX` or `biblatex` and can be defined in a local-variable block at the end of the file.
 
 
-## `parsebib-parse-buffer (&optional entries-hash strings-hash expand-strings)` ##
+### `parsebib-parse-buffer (&optional entries-hash strings-hash expand-strings)` ###
 
 Collect all BibTeX data in the current buffer. Return a five-element list:
 
@@ -63,14 +63,14 @@ Lower-level API
 
 The lower-level API consists of functions that do the actual reading of a BibTeX item. Unlike the higher-level API, the functions here are dependent on the position of point. They are designed in such a way that calling them multiple times in succession will yield the contents of the entire `.bib` file. All functions here take an optional position argument, which is the position in the buffer from which they should start reading. In each function, the default value is `(point)`.
 
-`parsebib-find-next-item (&optional pos)`
+### `parsebib-find-next-item (&optional pos)` ###
 
 Find the first BibTeX item following point, where an item is either an entry, or a `@Preamble`, `@String`, or `@Comment`. This function returns the item's type as a string, i.e., either `"preamble"`, `"string"`, or `"comment"`, or the entry type. Note that the `@` is *not* part of the returned string. This function moves point into the correct position to start reading the actual contents of the item, which is done by one of the following functions.
 
-`parsebib-read-string` (&optional pos strings)\
-`parsebib-read-entry` (type &optional pos strings)\
-`parsebib-read-preamble` (&optional pos)\
-`parsebib-read-comment` (&optional pos)
+### `parsebib-read-string` (&optional pos strings) ###
+### `parsebib-read-entry` (type &optional pos strings) ###
+### `parsebib-read-preamble` (&optional pos) ###
+### `parsebib-read-comment` (&optional pos) ###
 
 These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebiib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` expansions or in field values are expanded. Furthermore, the outermost braces or double quotes are removed. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
 
