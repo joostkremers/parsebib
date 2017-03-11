@@ -172,7 +172,9 @@ if non-nil."
                  ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
                   (match-string 1 str))
                  ((string-match "[0-9]+" str)
-                  str))))
+                  str)
+                 (str)                  ;; if no replacement was found, return as is
+                 )))
           strings))
 
 ;;;;;;;;;;;;;;;;;;;
