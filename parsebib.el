@@ -179,12 +179,12 @@ Otherwise, if the string is enclosed in braces {} or double
 quotes \"\", remove the delimiters.  In addition, newlines and
 multiple spaces in the string are replaced with a single space."
   (mapcar (lambda (str)
-            (or (gethash str abbrevs)
-                (progn (setq str (replace-regexp-in-string "[ \t\n\f]+" " " str))
-                       (cond
-                        ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
-                         (match-string 1 str))
-                        (t str)))))
+            (setq str (replace-regexp-in-string "[ \t\n\f]+" " " str))
+            (cond
+             ((gethash str abbrevs))
+             ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
+              (match-string 1 str))
+             (t str)))
           strings))
 
 ;;;;;;;;;;;;;;;;;;;
