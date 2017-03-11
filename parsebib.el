@@ -172,7 +172,12 @@ double quotes around field values are removed."
       (string-join (nreverse res) " # "))))
 
 (defun parsebib--expand-strings (strings abbrevs)
-  "Replace STRINGS with expansions in ABBREVS."
+  "Expand strings in STRINGS using expansions in ABBREVS.
+STRINGS is a list of strings.  If a string in STRINGS has an
+expansion in hash table ABBREVS, replace it with its expansion.
+Otherwise, if the string is enclosed in braces {} or double
+quotes \"\", remove the delimiters.  In addition, newlines and
+multiple spaces in the string are replaced with a single space."
   (mapcar (lambda (str)
             (or (gethash str abbrevs)
                 (progn (setq str (replace-regexp-in-string "[ \t\n\f]+" " " str))
