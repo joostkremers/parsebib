@@ -175,9 +175,9 @@ if non-nil."
                   str))))
           strings))
 
-;;;;;;;;;;;;;;;;;;;;;;;;
-;; parsing a bib file ;;
-;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;
+;; low-level API ;;
+;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-find-next-item (&optional pos)
   "Find the first (potential) BibTeX item following POS.
@@ -322,6 +322,10 @@ value."
           (let ((field-type (buffer-substring-no-properties beg (point))))
             (let ((field-contents (parsebib--parse-value limit strings)))
               (cons field-type field-contents)))))))
+
+;;;;;;;;;;;;;;;;;;;;
+;; high-level API ;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-collect-strings (&optional hash expand-strings)
   "Collect all @String definitions in the current buffer.
