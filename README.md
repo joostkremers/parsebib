@@ -23,7 +23,7 @@ The variable `hash` can be used to pass a hash table in which the entries are st
 The variable `strings` is a hash table of `@string` definitions, where the keys are the `@string` abbreviations and the values their expansions. If the variable `strings` is present, abbreviations occurring in the field values of the entries being read are expanded. Furthermore, the (outer) braces or double quotes are removed from field values.
 
 
-### `parsebib-collect-strings (&optional hash expand-strings)`## ###
+### `parsebib-collect-strings (&optional hash expand-strings)` ###
 
 Collect all `@string` definitions in the current buffer. Again, the variable `hash` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created and returned.
 
