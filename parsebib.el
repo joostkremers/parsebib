@@ -323,11 +323,13 @@ value."
             (let ((field-contents (parsebib--parse-value limit strings)))
               (cons field-type field-contents)))))))
 
-(defun parsebib-collect-strings (&optional hash)
+(defun parsebib-collect-strings (&optional hash expand-strings)
   "Collect all @String definitions in the current buffer.
 Return value is a hash with the abbreviations as keys and the
 expansions as values.  If HASH is a hash table with test function
-`equal', it is used to store the @String definitions."
+`equal', it is used to store the @String definitions.  If
+EXPAND-STRINGS is non-nil, @String expansions are expanded
+themselves using the @String definitions already stored in HASH."
   (save-excursion
     (goto-char (point-min))
     (let* ((res (if (and (hash-table-p hash)
@@ -338,7 +340,7 @@ expansions as values.  If HASH is a hash table with test function
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (when (cl-equalp item "string")
-                 (setq string (parsebib-read-string))
+                 (setq string (parsebib-read-string nil (if expand-strings hash)))
                  (puthash (car string) (cdr string) res)))
       hash)))
 
