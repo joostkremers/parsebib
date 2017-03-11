@@ -172,8 +172,6 @@ if non-nil."
                        (cond
                         ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
                          (match-string 1 str))
-                        ((string-match "[0-9]+" str)
-                         str)
                         (t str)))))
           strings))
 
