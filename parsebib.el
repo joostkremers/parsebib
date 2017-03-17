@@ -404,7 +404,6 @@ in the entries."
                      (puthash (cdr (assoc-string "=key=" entry)) entry res))))
       hash)))
 
-
 (defun parsebib-find-bibtex-dialect ()
   "Find the BibTeX dialect of a file if one is set.
 This function looks for a local value of the variable
