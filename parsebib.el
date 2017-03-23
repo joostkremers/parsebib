@@ -354,7 +354,8 @@ Inheritance is determined by INHERITANCES, which is an alist of
 source/target pairs.  If no inheritance should take place for
 SOURCE-FIELD, the target in the relevant item in INHERITANCES is
 the symbol `none'.  If there is no item for SOURCE-FIELD in
-INHERITANCES, SOURCE-FIELD is returned."
+INHERITANCES, SOURCE-FIELD is returned.  Note that it is valid
+for INHERITANCES to be nil."
   ;; Note: the argument INHERITANCES differs from the INHERITANCE argument in
   ;; the previous two functions.  It is a simple alist of (source-field
   ;; . target-field) pairs.
