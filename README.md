@@ -39,7 +39,7 @@ If the variable `inheritance` is present, cross-references among entries are res
 
 Collect all `@string` definitions in the current buffer and return them as a hash table. The variable `hash` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created.
 
-The argument `expand-strings` is a boolean value. If non-nil, any abbreviations found in the string expansions are expanded against the `@string` definitions appearing earlier in the `.bib` file and against `@string` definitions in `hash`, if provided.
+The argument `expand-strings` is a boolean value. If non-nil, any abbreviations found in the string definitions are expanded against the `@string` definitions appearing earlier in the `.bib` file and against `@string` definitions in `hash`, if provided.
 
 
 ### `parsebib-collect-preambles` ###
