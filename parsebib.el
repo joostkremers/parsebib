@@ -303,11 +303,13 @@ multiple spaces in the string are replaced with a single space."
   "Expand cross-referencing items in ENTRIES.
 BibTeX entries in ENTRIES that have a `crossref' field are
 expanded with the fields in the cross-referenced entry.  ENTRIES
-is a hash table with entries, which is updated.  INHERITANCE
-indicated the inheritance schema.  It can be a symbol `BibTeX' or
-`biblatex', or it can be an explicit inheritance schema.  See the
-variable `parsebib--biblatex-inheritances' for details on the
-structure of such an inheritance schema."
+is a hash table with entries.  This hash table is updated with
+the new fields.  The return value of this function is always nil.
+
+INHERITANCE indicates the inheritance schema.  It can be a symbol
+`BibTeX' or `biblatex', or it can be an explicit inheritance
+schema.  See the variable `parsebib--biblatex-inheritances' for
+details on the structure of such an inheritance schema."
   (maphash (lambda (key fields)
              (let ((xref (cdr (assoc-string "crossref" fields))))
                (when xref
