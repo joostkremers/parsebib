@@ -43,6 +43,114 @@
 (require 'cl-lib)
 (require 'subr-x) ; for `string-join'.
 
+(defvar parsebib--biblatex-inheritances '(("all"
+                                   "all"
+                                   (("ids" . none)
+                                    ("crossref" . none)
+                                    ("xref" . none)
+                                    ("entryset" . none)
+                                    ("entrysubtype" . none)
+                                    ("execute" . none)
+                                    ("label" . none)
+                                    ("options" . none)
+                                    ("presort" . none)
+                                    ("related" . none)
+                                    ("relatedoptions" . none)
+                                    ("relatedstring" . none)
+                                    ("relatedtype" . none)
+                                    ("shorthand" . none)
+                                    ("shorthandintro" . none)
+                                    ("sortkey" . none)))
+
+                                  ("mvbook, book"
+                                   "inbook, bookinbook, suppbook"
+                                   (("author" . "author")
+                                    ("author" . "bookauthor")))
+
+                                  ("mvbook"
+                                   "book, inbook, bookinbook, suppbook"
+                                   (("title" . "maintitle")
+                                    ("subtitle" . "mainsubtitle")
+                                    ("titleaddon" . "maintitleaddon")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none)))
+
+                                  ("mvcollection, mvreference"
+                                   "collection, reference, incollection, inreference, suppcollection"
+                                   (("title" . "maintitle")
+                                    ("subtitle" . "mainsubtitle")
+                                    ("titleaddon" . "maintitleaddon")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none)))
+
+                                  ("mvproceedings"
+                                   "proceedings, inproceedings"
+                                   (("title" . "maintitle")
+                                    ("subtitle" . "mainsubtitle")
+                                    ("titleaddon" . "maintitleaddon")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none)))
+
+                                  ("book"
+                                   "inbook, bookinbook, suppbook"
+                                   (("title" . "booktitle")
+                                    ("subtitle" . "booksubtitle")
+                                    ("titleaddon" . "booktitleaddon")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none)))
+
+                                  ("collection, reference"
+                                   "incollection, inreference, suppcollection"
+                                   (("title" . "booktitle")
+                                    ("subtitle" . "booksubtitle")
+                                    ("titleaddon" . "booktitleaddon")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none)))
+
+                                  ("proceedings"
+                                   "inproceedings"
+                                   (("title" . "booktitle")
+                                    ("subtitle" . "booksubtitle")
+                                    ("titleaddon" . "booktitleaddon")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none)))
+
+                                  ("periodical"
+                                   "article, suppperiodical"
+                                   (("title" . "journaltitle")
+                                    ("subtitle" . "journalsubtitle")
+                                    ("shorttitle" . none)
+                                    ("sorttitle" . none)
+                                    ("indextitle" . none)
+                                    ("indexsorttitle" . none))))
+  "Inheritance scheme for BibLaTeX cross-referencing.
+Inheritances are specified for pairs of source and target entry
+type, where the target is the cross-referencing entry and the
+source the cross-referenced entry.  Each pair specifies the
+fields in the source and the fields in the target that they
+correspond with.
+
+Inheritances valid for all entry types are defined by specifying
+the entry type as \"all\".  The entry type may also be a
+comma-separated list of entry types.
+
+If no inheritance rule is set up for a given entry type+field
+combination, the field inherits from the same-name field in the
+cross-referenced entry.  If no inheritance should take place, the
+target field is set to the symbol `none'.")
+
 (defconst parsebib--bibtex-identifier "[^^\"@\\&$#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--key-regexp "[^^\"@\\&$#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
@@ -72,9 +180,9 @@ Defaults to `error'."
 
 (define-error 'parsebib-entry-type-error "Illegal entry type" 'error)
 
-;;;;;;;;;;;;;;;;;;;;
-;; matching stuff ;;
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; matching and parsing stuff ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib--looking-at-goto-end (str &optional match)
   "Like `looking-at' but move point to the end of the matching string STR.
@@ -171,6 +279,10 @@ double quotes around field values are removed."
         (string-join (parsebib--expand-strings (nreverse res) strings))
       (string-join (nreverse res) " # "))))
 
+;;;;;;;;;;;;;;;;;;;;;
+;; expanding stuff ;;
+;;;;;;;;;;;;;;;;;;;;;
+
 (defun parsebib--expand-strings (strings abbrevs)
   "Expand strings in STRINGS using expansions in ABBREVS.
 STRINGS is a list of strings.  If a string in STRINGS has an
@@ -186,6 +298,71 @@ multiple spaces in the string are replaced with a single space."
               (match-string 1 str))
              (t str)))
           strings))
+
+(defun parsebib-expand-xrefs (entries inheritance)
+  "Expand cross-referencing items in ENTRIES.
+BibTeX entries in ENTRIES that have a `crossref' field are
+expanded with the fields in the cross-referenced entry.  ENTRIES
+is a hash table with entries, which is updated.  INHERITANCE
+indicated the inheritance schema.  It can be a symbol `BibTeX' or
+`biblatex', or it can be an explicit inheritance schema.  See the
+variable `parsebib--biblatex-inheritances' for details on the
+structure of such an inheritance schema."
+  (maphash (lambda (key fields)
+             (let ((xref (cdr (assoc-string "crossref" fields))))
+               (when xref
+                 (if (string-match-p (concat "\\b[\"{]" parsebib--key-regexp "[\"}]\\b") xref)
+                     (setq xref (substring xref 1 -1)))
+                 (let* ((source (gethash xref entries))
+                        (updated-entry (parsebib--get-xref-fields fields source inheritance)))
+                   (when updated-entry
+                     (puthash key updated-entry entries))))))
+           entries))
+
+(defun parsebib--get-xref-fields (target-entry source-entry inheritance)
+  "Return TARGET-ENTRY supplemented with fields inherited from SOURCE-ENTRY.
+TARGET-ENTRY and SOURCE-ENTRY are entry alists.  Fields in
+SOURCE-ENTRY for which TARGET-ENTRY has no value are added to
+TARGET-ENTRY.  Return value is the modified TARGET-ENTRY.
+
+INHERITANCE is an inheritance schema.  It can either be one of
+the symbols `BibTeX' or `biblatex', or it can be an explicit
+inheritance schema.  See the variable
+`parsebib--biblatex-inheritances' for details on the structure of
+such an inheritance schema."
+  (when (and target-entry source-entry)
+    (when (eq inheritance 'biblatex)
+      (setq inheritance parsebib--biblatex-inheritances))
+    (let* ((inheritable-fields (unless (eq inheritance 'BibTeX)
+                                 (cl-third (cl-find-if (lambda (elem)
+                                                         (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b") (cl-first elem))
+                                                              (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b") (cl-second elem))))
+                                                       inheritance))))
+           (new-fields (delq nil (mapcar (lambda (field)
+                                           (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
+                                             (if (and target-field
+                                                      (not (assoc-string target-field target-entry 'case-fold)))
+                                                 (cons target-field (cdr field)))))
+                                         source-entry))))
+      (append target-entry new-fields))))
+
+(defun parsebib--get-target-field (source-field inheritances)
+  "Return the target field for inheritance from SOURCE-FIELD.
+Inheritance is determined by INHERITANCES, which is an alist of
+source/target pairs.  If no inheritance should take place for
+SOURCE-FIELD, the target in the relevant item in INHERITANCES is
+the symbol `none'.  If there is no item for SOURCE-FIELD in
+INHERITANCES, SOURCE-FIELD is returned."
+  ;; Note: the argument INHERITANCES differs from the INHERITANCE argument in
+  ;; the previous two functions.  It is a simple alist of (source-field
+  ;; . target-field) pairs.
+  (let ((target-field (cdr (assoc-string source-field inheritances 'case-fold))))
+    (cond
+     ((null target-field)
+      source-field)
+     ((eq target-field 'none)
+      nil)
+     (t target-field))))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; low-level API ;;
@@ -292,7 +469,7 @@ is otherwise not limited to any set of possible entry types. If
 so required, the calling function has to ensure that the entry
 type is valid.
 
-If STRINGS is provided it should be a hash table with string
+If STRINGS is provided, it should be a hash table with string
 abbreviations, which are used to expand abbrevs in the entry's
 fields."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
@@ -337,27 +514,6 @@ value."
 ;; high-level API ;;
 ;;;;;;;;;;;;;;;;;;;;
 
-(defun parsebib-collect-strings (&optional hash expand-strings)
-  "Collect all @String definitions in the current buffer.
-Return value is a hash with the abbreviations as keys and the
-expansions as values.  If HASH is a hash table with test function
-`equal', it is used to store the @String definitions.  If
-EXPAND-STRINGS is non-nil, @String expansions are expanded
-themselves using the @String definitions already stored in HASH."
-  (save-excursion
-    (goto-char (point-min))
-    (let* ((res (if (and (hash-table-p hash)
-                         (eq 'equal (hash-table-test hash)))
-                    hash
-                  (make-hash-table :test #'equal)))
-           string)
-      (cl-loop for item = (parsebib-find-next-item)
-               while item do
-               (when (cl-equalp item "string")
-                 (setq string (parsebib-read-string nil (if expand-strings hash)))
-                 (puthash (car string) (cdr string) res)))
-      hash)))
-
 (defun parsebib-collect-preambles ()
   "Collect all @Preamble definitions in the current buffer.
 Return a list of strings, each string a separate @Preamble."
@@ -382,27 +538,66 @@ Return a list of strings, each string a separate @Comment."
                  (push (parsebib-read-comment) res)))
       (nreverse res))))
 
-(defun parsebib-collect-entries (&optional hash strings)
-  "Collect all entries is the current buffer.
+(defun parsebib-collect-strings (&optional hash expand-strings)
+  "Collect all @String definitions in the current buffer.
+Return value is a hash with the abbreviations as keys and the
+expansions as values.  If HASH is a hash table with test function
+`equal', it is used to store the @String definitions.  If
+EXPAND-STRINGS is non-nil, @String expansions are expanded
+themselves using the @String definitions already stored in HASH."
+  (or (and (hash-table-p hash)
+           (eq 'equal (hash-table-test hash)))
+      (setq hash (make-hash-table :test #'equal)))
+  (save-excursion
+    (goto-char (point-min))
+    (cl-loop with string = nil
+             for item = (parsebib-find-next-item)
+             while item do
+             (when (cl-equalp item "string")
+               (setq string (parsebib-read-string nil (if expand-strings hash)))
+               (puthash (car string) (cdr string) hash)))
+    hash))
+
+(defun parsebib-collect-entries (&optional hash strings inheritance)
+  "Collect all entries in the current buffer.
 Return value is a hash table containing the entries.  If HASH is
 a hash table, with test function `equal', it is used to store the
 entries.  If STRINGS is non-nil, it should be a hash table of
 string definitions, which are used to expand abbreviations used
-in the entries."
+in the entries.
+
+If INHERITANCE is non-nil, cross-references in the entries are
+resolved: if the crossref field of an entry points to an entry
+already in HASH, the fields of the latter that do not occur in
+the entry are added to it.  INHERITANCE indicates the inheritance
+schema used for determining which fields inherit from which
+fields.  It can be a symbol `BibTeX' or `biblatex', or it can be
+an explicit inheritance schema.  (See the variable
+`parsebib--biblatex-inheritances' for details on the structure of
+such an inheritance schema.)  It can also be the symbol t, in
+which case the local variable block is checked for a
+dialect (using the variable `bibtex-dialect'), or, if no such
+local variable is found, the value of the variable
+`bibtex-dialect'."
+  (or (and (hash-table-p hash)
+           (eq 'equal (hash-table-test hash)))
+      (setq hash (make-hash-table :test #'equal)))
+  (if (eq inheritance t)
+      (setq inheritance (or (parsebib-find-bibtex-dialect)
+                            bibtex-dialect
+                            'BibTeX)))
   (save-excursion
     (goto-char (point-min))
-    (let* ((res (if (and (hash-table-p hash)
-                         (eq 'equal (hash-table-test hash)))
-                    hash
-                  (make-hash-table :test #'equal)))
-           entry)
-      (cl-loop for entry-type = (parsebib-find-next-item)
-               while entry-type do
-               (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-                 (setq entry (parsebib-read-entry entry-type nil strings))
-                 (if entry
-                     (puthash (cdr (assoc-string "=key=" entry)) entry res))))
-      hash)))
+    (cl-loop with entry = nil
+             for entry-type = (parsebib-find-next-item)
+             while entry-type do
+             (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
+               (setq entry (parsebib-read-entry entry-type nil strings))
+               (if entry
+                   (puthash (cdr (assoc-string "=key=" entry)) entry hash))))
+    (when inheritance
+      (parsebib-expand-xrefs hash inheritance))
+    hash))
 
 (defun parsebib-find-bibtex-dialect ()
   "Find the BibTeX dialect of a file if one is set.
@@ -420,32 +615,47 @@ file.  Return nil if no dialect is found."
                      (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
             (intern (match-string 1 comment))))))))
 
-(defun parsebib-parse-buffer (&optional entries-hash strings-hash expand-strings)
+(defun parsebib-parse-buffer (&optional entries strings expand-strings inheritance)
   "Parse the current buffer and return all BibTeX data.
 Return list of five elements: a hash table with the entries, a
 hash table with the @String definitions, a list of @Preamble
 definitions, a list of @Comments and the BibTeX dialect, if
 present in the file.
 
-If ENTRIES-HASH is a hash table with test function `equal', it is
-used to store the entries.  Any existing entries with identical
-keys are overwritten.  Similarly, if STRINGS-HASH is a hash table
-with test function `equal', the @String definitions are stored in
-it.
+If ENTRIES is a hash table with test function `equal', it is used
+to store the entries.  Any existing entries with identical keys
+are overwritten.  Similarly, if STRINGS is a hash table with test
+function `equal', the @String definitions are stored in it.
 
 If EXPAND-STRINGS is non-nil, abbreviations in the entries and
 @String definitions are expanded using the @String definitions
-already in STRINGS."
+already in STRINGS.
+
+If INHERITANCE is non-nil, cross-references in the entries are
+resolved: if the crossref field of an entry points to an entry
+already in ENTRIES, the fields of the latter that do not occur in
+the entry are added to it.  INHERITANCE indicates the inheritance
+schema used for determining which fields inherit from which
+fields.  It can be a symbol `BibTeX' or `biblatex', which means
+to use the default inheritance schema for either dialect, or it
+can be an explicit inheritance schema.  (See the variable
+`parsebib--biblatex-inheritances' for details on the structure of
+such an inheritance schema.)  It can also be the symbol t, in
+which case the local variable block is checked for a
+dialect (using the variable `bibtex-dialect'), or, if no such
+local variable is found, the value of the variable
+`bibtex-dialect'."
   (save-excursion
     (goto-char (point-min))
-    (let ((entries (if (and (hash-table-p entries-hash)
-                            (eq (hash-table-test entries-hash) 'equal))
-                       entries-hash
-                     (make-hash-table :test #'equal)))
-          (strings (if (and (hash-table-p strings-hash)
-                            (eq (hash-table-test strings-hash) 'equal))
-                       strings-hash
-                     (make-hash-table :test #'equal)))
+    (or (and (hash-table-p entries)
+             (eq (hash-table-test entries) 'equal))
+        (setq entries (make-hash-table :test #'equal)))
+    (or (and (hash-table-p strings)
+             (eq (hash-table-test strings) 'equal))
+        (setq strings (make-hash-table :test #'equal)))
+    (let ((dialect (or (parsebib-find-bibtex-dialect)
+                       bibtex-dialect
+                       'BibTeX))
           preambles comments)
       (cl-loop for item = (parsebib-find-next-item)
                while item do
@@ -462,7 +672,8 @@ already in STRINGS."
                  (let ((entry (parsebib-read-entry item nil (if expand-strings strings))))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
-      (list entries strings preambles comments (parsebib-find-bibtex-dialect)))))
+      (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
+      (list entries strings preambles comments dialect))))
 
 (provide 'parsebib)
 
