@@ -386,7 +386,7 @@ at the end of the buffer.
 POS can be a number or a marker and defaults to point."
   (when pos (goto-char pos))
   (when (re-search-forward parsebib--entry-start nil 0)
-    (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]") 1)
+    (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?") 1)
         (match-string-no-properties 1)
       (signal 'parsebib-entry-type-error (list (point))))))
 
@@ -401,11 +401,12 @@ beginning of the line POS is on.  If POS is nil, it defaults to
 point."
   (when pos (goto-char pos))
   (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "comment[[:space:]]*[\(\{]"))
-    (let ((beg (point))) ; we are right after the opening brace / parenthesis
-      (forward-char -1)  ; move back to the brace / paren
-      (when (parsebib--match-paren-forward)
-        (buffer-substring-no-properties beg (point))))))
+  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(comment[[:space:]]*\\)[\(\{]?") 1)
+    (let ((beg (point)))
+      (if (looking-at-p "[\({]")
+          (parsebib--match-paren-forward)
+        (goto-char (point-at-eol)))
+      (buffer-substring-no-properties beg (point)))))
 
 (defun parsebib-read-string (&optional pos strings)
   "Read the @String definition beginning at the line POS is on.
