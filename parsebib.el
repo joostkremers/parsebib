@@ -535,7 +535,7 @@ Return a list of strings, each string a separate @Comment."
                while item do
                (when (cl-equalp item "comment")
                  (push (parsebib-read-comment) res)))
-      (nreverse res))))
+      (nreverse (delq nil res)))))
 
 (defun parsebib-collect-strings (&optional hash expand-strings)
   "Collect all @String definitions in the current buffer.
