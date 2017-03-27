@@ -392,8 +392,12 @@ POS can be a number or a marker and defaults to point."
 
 (defun parsebib-read-comment (&optional pos)
   "Read the @Comment beginning at the line POS is on.
-Return value is the text of the @Comment or nil if no comment is
-found.
+Return value is the text of the @Comment including the braces.
+For comments that last until the end of the line (i.e., comments
+that are not delimited by braces), the return value includes the
+whitespace between `@comment' and the actual comment text.
+
+If no comment could be found, return nil.
 
 POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @Comment entry must start at the
