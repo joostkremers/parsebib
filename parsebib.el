@@ -401,10 +401,11 @@ beginning of the line POS is on.  If POS is nil, it defaults to
 point."
   (when pos (goto-char pos))
   (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(comment[[:space:]]*\\)[\(\{]?") 1)
+  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(comment\\)[[:space:]]*[\(\{]?") 1)
     (let ((beg (point)))
-      (if (looking-at-p "[\({]")
-          (parsebib--match-paren-forward)
+      (if (looking-at-p "[[:space:]]*[\(\{]")
+          (progn (skip-chars-forward "[:space:]")
+                 (parsebib--match-paren-forward))
         (goto-char (point-at-eol)))
       (buffer-substring-no-properties beg (point)))))
 
