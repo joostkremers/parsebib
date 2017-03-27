@@ -199,31 +199,26 @@ This function handles parentheses () and braces {}.  Return t if a
 matching parenthesis was found.  Note that this function puts
 point right before the closing delimiter (unlike e.g.,
 `forward-sexp', which puts it right after.)"
-  (let ((result (cond
-                 ((eq (char-after) ?\{)
-                  (parsebib--match-brace-forward))
-                 ((eq (char-after) ?\()
-                  ;; This is really a hack. We want to allow unbalanced parentheses in
-                  ;; field values (BibTeX does), so we cannot use forward-sexp
-                  ;; here. For the same reason, looking for the matching paren by hand
-                  ;; is pretty complicated. However, balanced parentheses can only be
-                  ;; used to enclose entire entries (or @STRINGs or @PREAMBLEs) so we
-                  ;; can be pretty sure we'll find it right before the next @ at the
-                  ;; start of a line, or right before the end of the file.
-                  (let ((beg (point)))
-                    (re-search-forward parsebib--entry-start nil 0)
-                    (skip-chars-backward "@ \n\t\f")
-                    (if (eq (char-after) ?\))
-                        ;; if we've found a closing paren, return t
-                        t
-                      ;; otherwise put the cursor back and signal an error
-                      (goto-char beg)
-                      (signal 'scan-error (list "Unbalanced parentheses" beg (point-max)))))))))
-    (when result
-      ;; move point one char back to place it where the rest of parsebib expects it
-      (forward-char -1)
-      ;; make sure we return t
-      result)))
+  (cond
+   ((eq (char-after) ?\{)
+    (parsebib--match-brace-forward))
+   ((eq (char-after) ?\()
+    ;; This is really a hack. We want to allow unbalanced parentheses in
+    ;; field values (BibTeX does), so we cannot use forward-sexp
+    ;; here. For the same reason, looking for the matching paren by hand
+    ;; is pretty complicated. However, balanced parentheses can only be
+    ;; used to enclose entire entries (or @STRINGs or @PREAMBLEs) so we
+    ;; can be pretty sure we'll find it right before the next @ at the
+    ;; start of a line, or right before the end of the file.
+    (let ((beg (point)))
+      (re-search-forward parsebib--entry-start nil 0)
+      (skip-chars-backward "@ \n\t\f")
+      (if (eq (char-after) ?\))
+          ;; if we've found a closing paren, return t
+          t
+        ;; otherwise put the cursor back and signal an error
+        (goto-char beg)
+        (signal 'scan-error (list "Unbalanced parentheses" beg (point-max))))))))
 
 (defun parsebib--match-delim-forward ()
   "Move forward to the closing delimiter matching the delimiter at point.
@@ -430,14 +425,14 @@ expansion."
   (when pos (goto-char pos))
   (beginning-of-line)
   (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(string[[:space:]]*\\)[\(\{]") 1)
-    (let ((limit (save-excursion        ; find the position of the matching end parenthesis
+    (let ((limit (save-excursion
                    (parsebib--match-paren-forward)
                    (point))))
       (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
       (let ((abbr (match-string-no-properties 1)))
         (when (and abbr (> (length abbr) 0))            ; if we found an abbrev
           (let ((expansion (parsebib--parse-value limit strings)))
-            (goto-char (1+ limit))
+            (goto-char limit)
             (cons abbr expansion)))))))
 
 (defun parsebib-read-preamble (&optional pos)
