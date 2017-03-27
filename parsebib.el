@@ -677,7 +677,7 @@ local variable is found, the value of the variable
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
       (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
-      (list entries strings preambles comments dialect))))
+      (list entries strings (nreverse preambles) (nreverse comments) dialect))))
 
 (provide 'parsebib)
 
