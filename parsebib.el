@@ -443,7 +443,8 @@ expansion."
 
 (defun parsebib-read-preamble (&optional pos)
   "Read the @Preamble definition at the line POS is on.
-Return the preamble as a string, or nil if none was found.
+Return the preamble as a string (including the braces surrounding
+the preamble text), or nil if no preamble was found.
 
 POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the @Preamble must start at the
@@ -451,9 +452,8 @@ beginning of the line POS is on.  If POS is nil, it defaults to
 point."
   (when pos (goto-char pos))
   (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "preamble[[:space:]]*[\(\{]"))
+  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(preamble[[:space:]]*\\)[\(\{]") 1)
     (let ((beg (point)))
-      (forward-char -1)
       (when (parsebib--match-paren-forward)
         (buffer-substring-no-properties beg (point))))))
 
