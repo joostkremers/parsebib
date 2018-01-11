@@ -219,7 +219,7 @@ point right before the closing delimiter (unlike e.g.,
     (let ((beg (point)))
       (re-search-forward parsebib--entry-start nil 0)
       (skip-chars-backward "@ \n\t\f")
-      (if (eq (char-after) ?\))
+      (if (eq (char-before) ?\))
           ;; if we've found a closing paren, return t
           t
         ;; otherwise put the cursor back and signal an error
