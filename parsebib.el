@@ -201,10 +201,9 @@ MATCH acts just like the argument to MATCH-END, and defaults to
 
 (defun parsebib--match-paren-forward ()
   "Move forward to the closing paren matching the opening paren at point.
-This function handles parentheses () and braces {}.  Return t if a
-matching parenthesis was found.  Note that this function puts
-point right before the closing delimiter (unlike e.g.,
-`forward-sexp', which puts it right after.)"
+This function handles parentheses () and braces {}.  Return t if
+a matching parenthesis was found.  This function puts point
+immediately after the matching parenthesis."
   (cond
    ((eq (char-after) ?\{)
     (parsebib--match-brace-forward))
