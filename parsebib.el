@@ -208,22 +208,7 @@ immediately after the matching parenthesis."
    ((eq (char-after) ?\{)
     (parsebib--match-brace-forward))
    ((eq (char-after) ?\()
-    ;; This is really a hack. We want to allow unbalanced parentheses in
-    ;; field values (BibTeX does), so we cannot use forward-sexp
-    ;; here. For the same reason, looking for the matching paren by hand
-    ;; is pretty complicated. However, balanced parentheses can only be
-    ;; used to enclose entire entries (or @STRINGs or @PREAMBLEs) so we
-    ;; can be pretty sure we'll find it right before the next @ at the
-    ;; start of a line, or right before the end of the file.
-    (let ((beg (point)))
-      (re-search-forward parsebib--entry-start nil 0)
-      (skip-chars-backward "@ \n\t\f")
-      (if (eq (char-before) ?\))
-          ;; if we've found a closing paren, return t
-          t
-        ;; otherwise put the cursor back and signal an error
-        (goto-char beg)
-        (signal 'scan-error (list "Unbalanced parentheses" beg (point-max))))))))
+    (bibtex-end-of-entry))))
 
 (defun parsebib--match-delim-forward ()
   "Move forward to the closing delimiter matching the delimiter at point.
