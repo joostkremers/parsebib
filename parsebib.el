@@ -41,7 +41,7 @@
 
 (require 'bibtex)
 (require 'cl-lib)
-(require 'subr-x) ; for `string-join'.
+(eval-when-compile (require 'subr-x)) ; for `string-join'.
 
 (defvar parsebib--biblatex-inheritances '(("all"
                                    "all"
