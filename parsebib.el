@@ -417,7 +417,6 @@ point.
 If STRINGS is provided it should be a hash table with string
 abbreviations, which are used to expand abbrevs in the string's
 expansion."
-  (interactive)
   (when pos (goto-char pos))
   (beginning-of-line)
   (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(string[[:space:]]*\\)[\(\{]") 1)
