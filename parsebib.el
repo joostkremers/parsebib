@@ -8,6 +8,7 @@
 ;; Created: 2014
 ;; Version: 2.3
 ;; Keywords: text bibtex
+;; URL: https://github.com/joostkremers/parsebib
 ;; Package-Requires: ((emacs "24.3"))
 
 ;; Redistribution and use in source and binary forms, with or without
