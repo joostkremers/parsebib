@@ -44,6 +44,17 @@
 (require 'cl-lib)
 (eval-when-compile (require 'subr-x)) ; for `string-join'.
 
+(defgroup parsebib nil
+  "A library for parsing bib files."
+  :group 'parsebib
+  :prefix "parsebib")
+
+(defcustom parsebib-hashid-fields '("=key=")
+  "List of FIELDs to creat hash id for each ENTRY."
+  :type '(repeat (string))
+  :group 'parsebib)
+
+
 (defvar parsebib--biblatex-inheritances '(("all"
 					   "all"
 					   (("ids" . none)
@@ -161,6 +172,7 @@ target field is set to the symbol `none'.")
 (defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--key-regexp        "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
+
 
 ;; Emacs 24.3 compatibility code.
 (unless (fboundp 'define-error)
@@ -354,6 +366,21 @@ for INHERITANCES to be nil."
       nil)
      (t target-field))))
 
+(defun parsebib--get-hashid-fields (fields)
+  "Creat a string for HASHID."
+  (let (hashid-fields-string)
+    (cl-loop
+     for field in parsebib-hashid-fields
+     collect (or
+              ;; remove braces {}
+              (replace-regexp-in-string "^{\\|}\\'" "" (cdr (assoc field fields)))
+              "")
+     into hashid-fields
+     finally (setq hashid-fields-string (mapconcat 'identity hashid-fields "")))
+    hashid-fields-string))
+
+
+
 ;;;;;;;;;;;;;;;;;;;
 ;; low-level API ;;
 ;;;;;;;;;;;;;;;;;;;
@@ -487,6 +514,7 @@ fields."
                                while field collect field)))
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
+          (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-fields fields))) fields)
           (nreverse fields))))))
 
 (defun parsebib--find-bibtex-field (limit &optional strings)
