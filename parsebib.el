@@ -44,16 +44,9 @@
 (require 'cl-lib)
 (eval-when-compile (require 'subr-x)) ; for `string-join'.
 
-(defgroup parsebib nil
-  "A library for parsing bib files."
-  :group 'parsebib
-  :prefix "parsebib")
-
-(defcustom parsebib-hashid-fields '("=key=")
-  "List of FIELDs to creat hash id for each ENTRY."
-  :type '(repeat (string))
-  :group 'parsebib)
-
+(defvar parsebib-hashid-fields nil
+  "List of fields used to create a hash id for each entry.
+The hash id is stored in the entry in the special field `=hashid='.")
 
 (defvar parsebib--biblatex-inheritances '(("all"
 					   "all"
