@@ -359,21 +359,6 @@ for INHERITANCES to be nil."
       nil)
      (t target-field))))
 
-(defun parsebib--get-hashid-fields (fields)
-  "Creat a string for HASHID."
-  (let (hashid-fields-string)
-    (cl-loop
-     for field in parsebib-hashid-fields
-     collect (or
-              ;; remove braces {}
-              (replace-regexp-in-string "^{\\|}\\'" "" (cdr (assoc field fields)))
-              "")
-     into hashid-fields
-     finally (setq hashid-fields-string (mapconcat 'identity hashid-fields "")))
-    hashid-fields-string))
-
-
-
 ;;;;;;;;;;;;;;;;;;;
 ;; low-level API ;;
 ;;;;;;;;;;;;;;;;;;;
@@ -466,6 +451,17 @@ point."
     (let ((beg (point)))
       (when (parsebib--match-paren-forward)
         (buffer-substring-no-properties beg (point))))))
+
+(defun parsebib--get-hashid-string (fields)
+  "Create a string from the contents of FIELDS to compute a hash id."
+  (cl-loop
+   for field in parsebib-hashid-fields
+   collect (or
+            ;; remove braces {}
+            (replace-regexp-in-string "^{\\|}\\'" "" (cdr (assoc-string field fields 'case-fold)))
+            "")
+   into hashid-fields
+   finally return (mapconcat #'identity hashid-fields "")))
 
 (defun parsebib-read-entry (type &optional pos strings)
   "Read a BibTeX entry of type TYPE at the line POS is on.
