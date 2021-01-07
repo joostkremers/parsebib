@@ -166,7 +166,6 @@ target field is set to the symbol `none'.")
 (defconst parsebib--key-regexp        "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
-
 ;; Emacs 24.3 compatibility code.
 (unless (fboundp 'define-error)
   ;; This definition is simply copied from the Emacs 24.4 sources
