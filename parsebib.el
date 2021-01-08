@@ -485,7 +485,7 @@ fields."
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
           (if parsebib-hashid-fields
-              (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-fields fields))) fields))
+              (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-string fields))) fields))
           (nreverse fields))))))
 
 (defun parsebib--find-bibtex-field (limit &optional strings)
