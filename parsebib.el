@@ -6,10 +6,10 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 2014
-;; Version: 2.3
+;; Version: 2.4
 ;; Keywords: text bibtex
 ;; URL: https://github.com/joostkremers/parsebib
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "25.1"))
 
 ;; Redistribution and use in source and binary forms, with or without
 ;; modification, are permitted provided that the following conditions
@@ -165,29 +165,6 @@ target field is set to the symbol `none'.")
 (defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--key-regexp        "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
-
-;; Emacs 24.3 compatibility code.
-(unless (fboundp 'define-error)
-  ;; This definition is simply copied from the Emacs 24.4 sources
-  (defun define-error (name message &optional parent)
-    "Define NAME as a new error signal.
-MESSAGE is a string that will be output to the echo area if such an error
-is signaled without being caught by a `condition-case'.
-PARENT is either a signal or a list of signals from which it inherits.
-Defaults to `error'."
-    (unless parent (setq parent 'error))
-    (let ((conditions
-           (if (consp parent)
-               (apply #'nconc
-                      (mapcar (lambda (parent)
-                                (cons parent
-                                      (or (get parent 'error-conditions)
-                                          (error "Unknown signal `%s'" parent))))
-                              parent))
-             (cons parent (get parent 'error-conditions)))))
-      (put name 'error-conditions
-           (delete-dups (copy-sequence (cons name conditions))))
-      (when message (put name 'error-message message)))))
 
 (define-error 'parsebib-entry-type-error "Illegal entry type" 'error)
 
