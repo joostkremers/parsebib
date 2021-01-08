@@ -470,6 +470,11 @@ sign.  The return value is the entry as an alist of (<field> .
 alist, the entry key is provided in the field \"=key=\" and the
 entry type in the field \"=type=\".
 
+If `parsebib-hashid-fields' is non-nil, a hash ID is added in the
+field \"=hashid=\".  The hash is computed on the basis of the
+contents of the fields listed in `parsebib-hashid-fields' using
+the function `secure-hash' and the `sha256' algorithm.
+
 POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the entry must start at the beginning of
 the line POS is on.  If POS is nil, it defaults to point.
