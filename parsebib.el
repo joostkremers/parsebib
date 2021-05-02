@@ -671,6 +671,53 @@ local variable is found, the value of the variable
       (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
       (list entries strings (nreverse preambles) (nreverse comments) dialect))))
 
+;;;;;;;;;;;;;;;;;;
+;; CSL-JSON API ;;
+;;;;;;;;;;;;;;;;;;
+
+(defun parsebib-parse-json-buffer (&optional entries stringify)
+  "Parse the current buffer and return all CSL-JSON data.
+The return value is a hash table containing all the elements.
+The hash table's keys are the \"id\" values of the entries, the
+hash table's values are alists as returned by `json-parse-buffer'
+or `json-read'
+
+If ENTRIES is a hash table with test function `equal', it is used
+to store the entries.  Any existing entries with identical keys
+are overwritten.
+
+If STRINGIFY is non-nil, JSON values that are not
+strings (notably name and date fields) are converted to
+strings.
+
+If a JSON object is encountered that does not have an \"id\"
+field, a `parsebib-entry-type-error' is raised."
+  (or (and (hash-table-p entries)
+           (eq (hash-table-test entries) 'equal))
+      (setq entries (make-hash-table :test #'equal)))
+  (save-excursion
+    (goto-char (point-min))
+    (let ((entry-vector (if (fboundp 'json-parse-buffer)
+                            (json-parse-buffer :object-type 'alist)
+                          (let ((json-object-type 'alist))
+                            (json-read)))))
+      (mapc (lambda (entry)
+              (let ((id (alist-get "id" entry nil nil #'string=)))
+                (if id
+                    (puthash id (if stringify
+                                    (parsebib-stringify-json entry)
+                                  entry)
+                             entries)
+                  (signal 'parsebib-entry-type-error (list entry)))))
+            entry-vector)))
+  entries)
+
+(defun parsebib-stringify-json (entry)
+  "Return ENTRY with all non-string values converted to strings.
+ENTRY is a CSL-JSON entry in the form of an alist.  ENTRY is
+modified in place.  Return value is ENTRY."
+  entry)
+
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
