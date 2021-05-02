@@ -43,6 +43,8 @@
 (require 'bibtex)
 (require 'cl-lib)
 (eval-when-compile (require 'subr-x)) ; for `string-join'.
+(eval-and-compile (unless (fboundp 'json-parse-buffer)
+                    (require 'json)))
 
 (defvar parsebib-hashid-fields nil
   "List of fields used to create a hash id for each entry.
