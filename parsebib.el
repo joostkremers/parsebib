@@ -774,6 +774,8 @@ string."
       (parsebib-json-stringify-name-field value))
      ((member-ignore-case field parsebib-json-date-fields)
       (parsebib-json-stringify-date-field value))
+     ((arrayp value)
+      (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
 (provide 'parsebib)
