@@ -773,7 +773,7 @@ string."
      ((member-ignore-case field parsebib-json-name-fields)
       (parsebib-json-stringify-name-field value))
      ((member-ignore-case field parsebib-json-date-fields)
-      (parsebib-json-stringify-date-field))
+      (parsebib-json-stringify-date-field value))
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
 (provide 'parsebib)
