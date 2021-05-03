@@ -719,6 +719,63 @@ ENTRY is a CSL-JSON entry in the form of an alist.  ENTRY is
 modified in place.  Return value is ENTRY."
   entry)
 
+(defvar parsebib-json-name-fields  '("author"
+                                     "collection-editor"
+                                     "composer"
+                                     "container-author"
+                                     "director"
+                                     "editor"
+                                     "editorial-director"
+                                     "illustrator"
+                                     "interviewer"
+                                     "original-author"
+                                     "recipient"
+                                     "reviewed-author"
+                                     "translator"))
+
+(defvar parsebib-json-date-fields '("accessed"
+                                    "container"
+                                    "event-date"
+                                    "issued"
+                                    "original-date"
+                                    "submitted"))
+
+(defvar parsebib-json-number-fields '("chapter-number"
+                                      "collection-number"
+                                      "edition"
+                                      "issue"
+                                      "number"
+                                      "number-of-pages"
+                                      "number-of-volumes"
+                                      "volume"))
+
+(defvar parsebib-json-name-field-template "{non-dropping-particle }{family }, {given }{dropping-particle, }{suffix}"
+  "Template used to display name fields.")
+
+(defvar parsebib-json-name-field-separator " and "
+  "Separator used to concatenate names in a name field.")
+
+(defvar parsebib-json-field-separator ", "
+  "Separator used to concatenate items of array fields.")
+
+(defun parsebib-stringify-json-field (field)
+  "Return the value of FIELD as a string.
+FIELD is a cons cell that constitutes a CSL-JSON field-value
+pair.  The car is the key, the cdr the value.  If the value is a
+string, return it unchanged.  Otherwise, convert it into a
+string."
+  (let ((value (cdr field)))
+    (cond
+     ((stringp value)
+      value)
+     ((numberp value)
+      (format "%s" value))
+     ((member-ignore-case field parsebib-json-name-fields)
+      (parsebib-json-stringify-name-field value))
+     ((member-ignore-case field parsebib-json-date-fields)
+      (parsebib-json-stringify-date-field))
+     (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
+
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
