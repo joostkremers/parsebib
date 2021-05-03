@@ -778,6 +778,23 @@ string."
       (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
+(defun parsebib--process-template (template items)
+  "Process TEMPLATE and return a formatted string.
+ITEMS is an alist, the keys of which may occur in TEMPLATE.
+Braced occurrences of the keys in ITEMS are replaced with the
+corresponding values."
+  (cl-flet ((create-replacements (match)
+                                 (save-match-data
+                                   (string-match "{\\([^A-Za-z]*\\)\\([A-Za-z][A-za-z-]+\\)\\([^A-Za-z]*\\)}" match)
+                                   (let* ((pre (match-string 1 match))
+                                          (key (match-string 2 match))
+                                          (post (match-string 3 match))
+                                          (value (alist-get key items nil nil #'string=)))
+                                     (if value
+                                         (concat pre value post)
+                                       "")))))
+    (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
+
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
