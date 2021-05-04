@@ -749,7 +749,7 @@ modified in place.  Return value is ENTRY."
                                       "number-of-volumes"
                                       "volume"))
 
-(defvar parsebib-json-name-field-template "{non-dropping-particle }{family }, {given }{dropping-particle, }{suffix}"
+(defvar parsebib-json-name-field-template "{non-dropping-particle }{family, }{given}{ dropping-particle}{, suffix}{literal}"
   "Template used to display name fields.")
 
 (defvar parsebib-json-name-field-separator " and "
@@ -757,26 +757,6 @@ modified in place.  Return value is ENTRY."
 
 (defvar parsebib-json-field-separator ", "
   "Separator used to concatenate items of array fields.")
-
-(defun parsebib-stringify-json-field (field)
-  "Return the value of FIELD as a string.
-FIELD is a cons cell that constitutes a CSL-JSON field-value
-pair.  The car is the key, the cdr the value.  If the value is a
-string, return it unchanged.  Otherwise, convert it into a
-string."
-  (let ((value (cdr field)))
-    (cond
-     ((stringp value)
-      value)
-     ((numberp value)
-      (format "%s" value))
-     ((member-ignore-case field parsebib-json-name-fields)
-      (parsebib-json-stringify-name-field value))
-     ((member-ignore-case field parsebib-json-date-fields)
-      (parsebib-json-stringify-date-field value))
-     ((arrayp value)
-      (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
-     (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
 (defun parsebib--process-template (template items)
   "Process TEMPLATE and return a formatted string.
@@ -794,6 +774,41 @@ corresponding values."
                                          (concat pre value post)
                                        "")))))
     (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
+
+(defun parsebib--json-stringify-name-field (names)
+  "Convert NAMEs into a string.
+NAMES is the value of a name field, a vector of alists.
+Conversion is done on the basis of
+`parsebib-json-name-field-template': each field in this template
+is replaced with the value of the field in NAME.  Fields that
+have no value in NAME are ignored."
+  (mapconcat (lambda (name)
+               (parsebib--process-template parsebib-json-name-field-template name))
+             names
+             parsebib-json-name-field-separator))
+
+(defun parsebib--json-stringify-date-field (name)
+  (ignore name))
+
+(defun parsebib-stringify-json-field (field)
+  "Return the value of FIELD as a string.
+FIELD is a cons cell that constitutes a CSL-JSON field-value
+pair.  The car is the key, the cdr the value.  If the value is a
+string, return it unchanged.  Otherwise, convert it into a
+string."
+  (let ((value (cdr field)))
+    (cond
+     ((stringp value)
+      value)
+     ((numberp value)
+      (format "%s" value))
+     ((member-ignore-case field parsebib-json-name-fields)
+      (parsebib--json-stringify-name-field value))
+     ((member-ignore-case field parsebib-json-date-fields)
+      (parsebib--json-stringify-date-field value))
+     ((arrayp value)
+      (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
+     (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
 (provide 'parsebib)
 
