@@ -76,4 +76,25 @@
   (should (string= (parsebib-stringify-json-field '(recipient . [((literal . "Michigan Institute of Technology"))]))
                    "Michigan Institute of Technology")))
 
+
+;; Test `parsebib-stringify-json-field' with date fields.
+(ert-deftest parsebib-test-stringify-json-field--date-fields ()
+  (should (string= (parsebib-stringify-json-field '(container
+                                                    (date-parts . [[2004 4 22] [2021 4 22]])))
+                   "2004-4-22/2021-4-22"))
+  (should (string= (parsebib-stringify-json-field '(submitted
+                                                    (date-parts . [[2004]])))
+                   "2004"))
+  (should (string= (parsebib-stringify-json-field '(issued
+                                                    (date-parts . [[2004 4]])
+                                                    (circa . t)))
+                   "ca. 2004-4"))
+  (should (string= (parsebib-stringify-json-field '(event-date
+                                                    (date-parts . [[2004]])
+                                                    (season . 1)))
+                   "Spring 2004"))
+  (should (string= (parsebib-stringify-json-field '(accessed
+                                                    (literal . "April 2004")))
+                   "April 2004")))
+
 ;;; parsebib-test.el ends here
