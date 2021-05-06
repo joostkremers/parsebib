@@ -719,35 +719,35 @@ ENTRY is a CSL-JSON entry in the form of an alist.  ENTRY is
 modified in place.  Return value is ENTRY."
   entry)
 
-(defvar parsebib-json-name-fields  '("author"
-                                     "collection-editor"
-                                     "composer"
-                                     "container-author"
-                                     "director"
-                                     "editor"
-                                     "editorial-director"
-                                     "illustrator"
-                                     "interviewer"
-                                     "original-author"
-                                     "recipient"
-                                     "reviewed-author"
-                                     "translator"))
+(defvar parsebib-json-name-fields  '(author
+                                     collection-editor
+                                     composer
+                                     container-author
+                                     director
+                                     editor
+                                     editorial-director
+                                     illustrator
+                                     interviewer
+                                     original-author
+                                     recipient
+                                     reviewed-author
+                                     translator))
 
-(defvar parsebib-json-date-fields '("accessed"
-                                    "container"
-                                    "event-date"
-                                    "issued"
-                                    "original-date"
-                                    "submitted"))
+(defvar parsebib-json-date-fields '(accessed
+                                    container
+                                    event-date
+                                    issued
+                                    original-date
+                                    submitted))
 
-(defvar parsebib-json-number-fields '("chapter-number"
-                                      "collection-number"
-                                      "edition"
-                                      "issue"
-                                      "number"
-                                      "number-of-pages"
-                                      "number-of-volumes"
-                                      "volume"))
+(defvar parsebib-json-number-fields '(chapter-number
+                                      collection-number
+                                      edition
+                                      issue
+                                      number
+                                      number-of-pages
+                                      number-of-volumes
+                                      volume))
 
 (defvar parsebib-json-name-field-template "{non-dropping-particle }{family, }{given}{ dropping-particle}{, suffix}{literal}"
   "Template used to display name fields.")
@@ -762,14 +762,15 @@ modified in place.  Return value is ENTRY."
   "Process TEMPLATE and return a formatted string.
 ITEMS is an alist, the keys of which may occur in TEMPLATE.
 Braced occurrences of the keys in ITEMS are replaced with the
-corresponding values."
+corresponding values.  Note that the keys in ITEMS should be
+symbols."
   (cl-flet ((create-replacements (match)
                                  (save-match-data
                                    (string-match "{\\([^A-Za-z]*\\)\\([A-Za-z][A-za-z-]+\\)\\([^A-Za-z]*\\)}" match)
                                    (let* ((pre (match-string 1 match))
                                           (key (match-string 2 match))
                                           (post (match-string 3 match))
-                                          (value (alist-get key items nil nil #'string=)))
+                                          (value (alist-get (intern key) items)))
                                      (if value
                                          (format "%s%s%s" pre value post)
                                        "")))))
@@ -788,9 +789,9 @@ string."
       value)
      ((numberp value)
       (format "%s" value))
-     ((member-ignore-case key parsebib-json-name-fields)
+     ((memq key parsebib-json-name-fields)
       (parsebib--json-stringify-name-field value))
-     ((member-ignore-case key parsebib-json-date-fields)
+     ((memq key parsebib-json-date-fields)
       (parsebib--json-stringify-date-field value))
      ((arrayp value)
       (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
@@ -813,7 +814,7 @@ have no value in NAME are ignored."
 If SHORT is non-nil, try to return only a year (in a date range,
 just the year of the first date)."
   (if short
-      (if-let ((date-parts (alist-get "date-parts" nil nil #'string=))
+      (if-let ((date-parts (alist-get 'date-parts date))
                (first-date (aref date-parts 0))
                (year (aref first-date 0)))
           (format "%s" year)
@@ -823,25 +824,25 @@ just the year of the first date)."
     (setq date (copy-sequence date))
 
     ;; Set start-date and end-date.
-    (when-let ((date-parts (alist-get "date-parts" date nil nil #'string=)))
+    (when-let ((date-parts (alist-get 'date-parts date)))
       (let* ((start-date (aref date-parts 0))
              (end-date (if (= (length date-parts) 2)
                            (aref date-parts 1))))
-        (setf (alist-get "date-parts" date nil :remove #'string=) nil)
-        (setf (alist-get "start-date" date nil nil #'string=)
+        (setf (alist-get 'date-parts date nil :remove) nil)
+        (setf (alist-get 'start-date date)
               (parsebib--json-stringify-date-part start-date))
-        (if end-date (setf (alist-get "end-date" date nil nil #'string=)
+        (if end-date (setf (alist-get 'end-date date)
                            (parsebib--json-stringify-date-part end-date)))))
 
     ;; Set season.
-    (when-let ((season (alist-get "season" date nil nil #'string=)))
+    (when-let ((season (alist-get 'season date)))
       (if (numberp season)
-          (setf (alist-get "season" date nil nil #'string=)
+          (setf (alist-get 'season date)
                 (aref ["Spring" "Summer" "Autumn" "Winter"] (1- season)))))
 
     ;; Set circa.
-    (when-let ((circa (alist-get "circa" date nil nil #'string=)))
-      (setf (alist-get "circa" date nil nil #'string=) "ca."))
+    (when-let ((circa (alist-get 'circa date)))
+      (setf (alist-get 'circa date) "ca."))
 
     ;; Now convert the date.
     (parsebib--process-template "{circa}{season}{start-date}{/end-date}{literal}{raw}"
@@ -852,7 +853,7 @@ just the year of the first date)."
 DATE-PARTS is a sequence with up to three numeric elements: a
 year, a month and a day."
   (parsebib--process-template "{year}{-month}{-day}"
-                              (seq-mapn #'cons '("year" "month" "day") date-parts)))
+                              (seq-mapn #'cons '(year month day) date-parts)))
 
 (provide 'parsebib)
 
