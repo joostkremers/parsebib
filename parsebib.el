@@ -47,6 +47,10 @@
                     (require 'json)
                     (defvar json-object-type)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; BibTeX / biblatex parser ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defvar parsebib-hashid-fields nil
   "List of fields used to create a hash id for each entry.
 Hash ids can only be created for BibTeX/biblatex files.  The hash
@@ -339,9 +343,9 @@ for INHERITANCES to be nil."
       nil)
      (t target-field))))
 
-;;;;;;;;;;;;;;;;;;;
-;; low-level API ;;
-;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; low-level BibTeX/biblatex API ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-find-next-item (&optional pos)
   "Find the first (potential) BibTeX item following POS.
@@ -508,9 +512,9 @@ value."
             (let ((field-contents (parsebib--parse-value limit strings)))
               (cons field-type field-contents)))))))
 
-;;;;;;;;;;;;;;;;;;;;
-;; high-level API ;;
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; high-level BibTeX/biblatex API ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-collect-preambles ()
   "Collect all @Preamble definitions in the current buffer.
