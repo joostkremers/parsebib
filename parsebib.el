@@ -677,6 +677,8 @@ local variable is found, the value of the variable
       (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
       (list entries strings (nreverse preambles) (nreverse comments) dialect))))
 
+(define-obsolete-function-alias 'parsebib-parse-buffer 'parsebib-parse-bib-buffer "Parsebib 3.0")
+
 ;;;;;;;;;;;;;;;;;;
 ;; CSL-JSON API ;;
 ;;;;;;;;;;;;;;;;;;
