@@ -787,14 +787,24 @@ string."
     (cond
      ((stringp value)
       value)
+
      ((numberp value)
       (format "%s" value))
+
      ((memq key parsebib-json-name-fields)
       (parsebib--json-stringify-name-field value))
+
      ((memq key parsebib-json-date-fields)
       (parsebib--json-stringify-date-field value))
+
+     ;; In CSL-JSON v1.0, the only array field besides name and date fields
+     ;; is "categories".  It has an array of strings as value, so the `format'
+     ;; isn't strictly necessary.  We do it this way just to be on the safe
+     ;; side.
      ((arrayp value)
       (mapconcat (lambda (e) (format "%s" e)) value parsebib-json-field-separator))
+
+     ;; This clause should never be reached.
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
 (defun parsebib--json-stringify-name-field (names)
