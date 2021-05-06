@@ -771,7 +771,7 @@ corresponding values."
                                           (post (match-string 3 match))
                                           (value (alist-get key items nil nil #'string=)))
                                      (if value
-                                         (concat pre value post)
+                                         (format "%s%s%s" pre value post)
                                        "")))))
     (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
 
