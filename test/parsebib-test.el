@@ -10,6 +10,31 @@
   (should (string= (parsebib--json-stringify-date-part [2021 22]) "2021-22"))
   (should (string= (parsebib--json-stringify-date-part [2021]) "2021")))
 
+(ert-deftest parsebib-test-json-stringify-date-field ()
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (date-parts . [[2004]])))
+                   "2004"))
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (date-parts . [[2004 4 22]])))
+                   "2004-4-22"))
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (date-parts . [[2004 4 22] [2021 4 22]])))
+                   "2004-4-22/2021-4-22"))
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (date-parts . [[2004] [2021]])))
+                   "2004/2021"))
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (date-parts . [[2004 4]])
+                                                          (circa . t)))
+                   "ca. 2004-4"))
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (date-parts . [[2004]])
+                                                          (season . 1)))
+                   "Spring 2004"))
+  (should (string= (parsebib--json-stringify-date-field '(issued
+                                                          (literal . "April 2004")))
+                   "April 2004")))
+
 (ert-deftest parsebib-test-json-stringify-name-field ()
   (should (string= (parsebib--json-stringify-name-field [((family . "Anderson")
                                                           (given . "John R."))
