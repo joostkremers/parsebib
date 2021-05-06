@@ -781,15 +781,16 @@ FIELD is a cons cell that constitutes a CSL-JSON field-value
 pair.  The car is the key, the cdr the value.  If the value is a
 string, return it unchanged.  Otherwise, convert it into a
 string."
-  (let ((value (cdr field)))
+  (let ((key (car field))
+        (value (cdr field)))
     (cond
      ((stringp value)
       value)
      ((numberp value)
       (format "%s" value))
-     ((member-ignore-case field parsebib-json-name-fields)
+     ((member-ignore-case key parsebib-json-name-fields)
       (parsebib--json-stringify-name-field value))
-     ((member-ignore-case field parsebib-json-date-fields)
+     ((member-ignore-case key parsebib-json-date-fields)
       (parsebib--json-stringify-date-field value))
      ((arrayp value)
       (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
