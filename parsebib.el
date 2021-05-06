@@ -846,7 +846,7 @@ first date)."
       (setf (alist-get 'circa date) "ca."))
 
     ;; Now convert the date.
-    (parsebib--process-template "{circa}{season}{start-date}{/end-date}{literal}{raw}"
+    (parsebib--process-template "{circa }{season }{start-date}{/end-date}{literal}{raw}"
                                 date)))
 
 (defun parsebib--json-stringify-date-part (date-parts)
