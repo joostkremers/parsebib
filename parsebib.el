@@ -799,7 +799,7 @@ string."
 
 (defun parsebib--json-stringify-name-field (names)
   "Convert NAMES to a string.
-NAMES is the value of a name field, a vector of alists.
+NAMES is the value of a CSL-JSON name field, a vector of alists.
 Conversion is done on the basis of
 `parsebib-json-name-field-template': each field in this template
 is replaced with the value of the field in NAME.  Fields that
@@ -811,8 +811,9 @@ have no value in NAME are ignored."
 
 (defun parsebib--json-stringify-date-field (date &optional short)
   "Convert DATE to a string.
-If SHORT is non-nil, try to return only a year (in a date range,
-just the year of the first date)."
+DATE is the value of a CSL-JSON date field.  If SHORT is non-nil,
+try to return only a year (in a date range, just the year of the
+first date)."
   (if short
       (if-let ((date-parts (alist-get 'date-parts date))
                (first-date (aref date-parts 0))
