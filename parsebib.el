@@ -810,6 +810,13 @@ string."
       (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
+(defun parsebib--json-stringify-date-part (date-parts)
+  "Convert DATE-PARTS into a string.
+DATE-PARTS is a sequence with up to three numeric elements: a
+year, a month and a day."
+  (parsebib--process-template "{year}{-month}{-day}"
+                              (seq-mapn #'cons '("year" "month" "day") date-parts)))
+
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
