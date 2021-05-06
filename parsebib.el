@@ -717,6 +717,11 @@ field, a `parsebib-entry-type-error' is raised."
   "Return ENTRY with all non-string values converted to strings.
 ENTRY is a CSL-JSON entry in the form of an alist.  ENTRY is
 modified in place.  Return value is ENTRY."
+  (mapc (lambda (field)
+          (unless (stringp (alist-get field entry))
+            (setf (alist-get field entry)
+                  (parsebib-stringify-json-field (assq field entry)))))
+        (mapcar #'car entry))
   entry)
 
 (defvar parsebib-json-name-fields  '(author
