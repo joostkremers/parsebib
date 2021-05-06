@@ -97,4 +97,23 @@
                                                     (literal . "April 2004")))
                    "April 2004")))
 
+;; Test `parsebib-stringify-json-field' with string fields.
+(ert-deftest parsebib-test-stringify-json-field--string-fields ()
+  (should (string= (parsebib-stringify-json-field '(title . "The Minimalist Program"))
+                   "The Minimalist Program"))
+  (should (string= (parsebib-stringify-json-field '(ISBN . "1-01-XXXXXX-X"))
+                   "1-01-XXXXXX-X")))
+
+;; Test `parsebib-stringify-json-field' with number fields.
+(ert-deftest parsebib-test-stringify-json-field--number-fields ()
+  (should (string= (parsebib-stringify-json-field '(volume . 3))
+                   "3"))
+  (should (string= (parsebib-stringify-json-field '(page . 155))
+                   "155")))
+
+;; Test `parsebib-stringify-json-field' with array fields.
+(ert-deftest parsebib-test-stringify-json-field--array-fields ()
+  (should (string= (parsebib-stringify-json-field '(categories . ["fiction" "horror"]))
+                   "fiction, horror")))
+
 ;;; parsebib-test.el ends here
