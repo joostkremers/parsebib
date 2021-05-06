@@ -775,10 +775,6 @@ corresponding values."
                                        "")))))
     (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
 
-
-(defun parsebib--json-stringify-date-field (name)
-  (ignore name))
-
 (defun parsebib-stringify-json-field (field)
   "Return the value of FIELD as a string.
 FIELD is a cons cell that constitutes a CSL-JSON field-value
@@ -810,6 +806,46 @@ have no value in NAME are ignored."
                (parsebib--process-template parsebib-json-name-field-template name))
              names
              parsebib-json-name-field-separator))
+
+(defun parsebib--json-stringify-date-field (date &optional short)
+  "Convert DATE to a string.
+If SHORT is non-nil, try to return only a year (in a date range,
+just the year of the first date)."
+  (if short
+      (if-let ((date-parts (alist-get "date-parts" nil nil #'string=))
+               (first-date (aref date-parts 0))
+               (year (aref first-date 0)))
+          (format "%s" year)
+        "XXXX")
+
+    ;; Work with a copy of the original alist.
+    (setq date (copy-sequence date))
+
+    ;; Set start-date and end-date.
+    (when-let ((date-parts (alist-get "date-parts" date nil nil #'string=)))
+      (let* ((start-date (aref date-parts 0))
+             (end-date (if (= (length date-parts) 2)
+                           (aref date-parts 1))))
+        (setf (alist-get "date-parts" date nil :remove #'string=) nil)
+        (setf (alist-get "start-date" date nil nil #'string=)
+              (parsebib--json-stringify-date-part start-date))
+        (if end-date (setf (alist-get "end-date" date nil nil #'string=)
+                           (parsebib--json-stringify-date-part end-date)))))
+
+    ;; Set season.
+    (when-let ((season (alist-get "season" date nil nil #'string=)))
+      (if (numberp season)
+          (setf (alist-get "season" date nil nil #'string=)
+                (aref ["Spring" "Summer" "Autumn" "Winter"] (1- season)))))
+
+    ;; Set circa.
+    (when-let ((circa (alist-get "circa" date nil nil #'string=)))
+      (setf (alist-get "circa" date nil nil #'string=) "ca."))
+
+    ;; Now convert the date.
+    (parsebib--process-template "{circa}{season}{start-date}{/end-date}{literal}{raw}"
+                                date)))
+
 (defun parsebib--json-stringify-date-part (date-parts)
   "Convert DATE-PARTS into a string.
 DATE-PARTS is a sequence with up to three numeric elements: a
