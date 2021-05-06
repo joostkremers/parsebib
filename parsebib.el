@@ -47,6 +47,8 @@
                     (require 'json)
                     (defvar json-object-type)))
 
+(define-error 'parsebib-entry-type-error "Illegal entry type" 'error)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BibTeX / biblatex parser ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -173,8 +175,6 @@ target field is set to the symbol `none'.")
 (defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--key-regexp        "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
-
-(define-error 'parsebib-entry-type-error "Illegal entry type" 'error)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; matching and parsing stuff ;;
