@@ -794,7 +794,7 @@ string."
      ((memq key parsebib-json-date-fields)
       (parsebib--json-stringify-date-field value))
      ((arrayp value)
-      (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
+      (mapconcat (lambda (e) (format "%s" e)) value parsebib-json-field-separator))
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
 (defun parsebib--json-stringify-name-field (names)
