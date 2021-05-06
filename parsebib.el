@@ -49,7 +49,8 @@
 
 (defvar parsebib-hashid-fields nil
   "List of fields used to create a hash id for each entry.
-The hash id is stored in the entry in the special field `=hashid='.")
+Hash ids can only be created for BibTeX/biblatex files.  The hash
+id is stored in the entry in the special field `=hashid='.")
 
 (defvar parsebib--biblatex-inheritances '(("all"
 					   "all"
