@@ -775,17 +775,6 @@ corresponding values."
                                        "")))))
     (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
 
-(defun parsebib--json-stringify-name-field (names)
-  "Convert NAMEs into a string.
-NAMES is the value of a name field, a vector of alists.
-Conversion is done on the basis of
-`parsebib-json-name-field-template': each field in this template
-is replaced with the value of the field in NAME.  Fields that
-have no value in NAME are ignored."
-  (mapconcat (lambda (name)
-               (parsebib--process-template parsebib-json-name-field-template name))
-             names
-             parsebib-json-name-field-separator))
 
 (defun parsebib--json-stringify-date-field (name)
   (ignore name))
@@ -810,6 +799,17 @@ string."
       (mapconcat #'parsebib-stringify-json-field value parsebib-json-field-separator))
      (t (replace-regexp-in-string "\n" " " (format "%s" value))))))
 
+(defun parsebib--json-stringify-name-field (names)
+  "Convert NAMES to a string.
+NAMES is the value of a name field, a vector of alists.
+Conversion is done on the basis of
+`parsebib-json-name-field-template': each field in this template
+is replaced with the value of the field in NAME.  Fields that
+have no value in NAME are ignored."
+  (mapconcat (lambda (name)
+               (parsebib--process-template parsebib-json-name-field-template name))
+             names
+             parsebib-json-name-field-separator))
 (defun parsebib--json-stringify-date-part (date-parts)
   "Convert DATE-PARTS into a string.
 DATE-PARTS is a sequence with up to three numeric elements: a
