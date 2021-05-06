@@ -612,7 +612,7 @@ file.  Return nil if no dialect is found."
                      (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
             (intern (match-string 1 comment))))))))
 
-(defun parsebib-parse-buffer (&optional entries strings expand-strings inheritance)
+(defun parsebib-parse-bib-buffer (&optional entries strings expand-strings inheritance)
   "Parse the current buffer and return all BibTeX data.
 Return list of five elements: a hash table with the entries, a
 hash table with the @String definitions, a list of @Preamble
