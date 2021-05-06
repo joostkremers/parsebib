@@ -2,6 +2,9 @@
 
 (require 'parsebib)
 
+;; Note: tests are named with the prefix `parsebib-test-' followed by the name
+;; of the function being tested, without the `parsebib-' or `parsebib--' prefix.
+
 (ert-deftest parsebib-test-json-stringify-date-part ()
   (should (string= (parsebib--json-stringify-date-part [2021 22 4]) "2021-22-4"))
   (should (string= (parsebib--json-stringify-date-part [2021 22]) "2021-22"))
