@@ -154,9 +154,9 @@ The following conversions are applied:
 - Strings are returned unchanged.
 - Numbers are converted to strings using `(format "%s" number)`.
 - Name fields (as defined by `parsebib--json-name-fields`) are converted using `parsebib-json-name-field-template` and `parsebib-json-name-field-separator`; see below for details.
-- Date fields (as defined by `parsebib--json-date-fields`) are converted to a format `2021-4-22`. If only a year is present, the month and day parts are omitted. The `season` and `circa` fields are accounted for. If the `literal` or `raw` fields are present, return these.
+- Date fields (as defined by `parsebib--json-date-fields`) are converted to a format `2021-4-22`. If only a year is present, the month and day parts are omitted. The `season` and `circa` fields are accounted for, and so are `literal` and `raw`.
 - Fields with an array as value (currently, in v1.0 of CSL-JSON, this only applies to the `categories` field), are converted to a string using `parsebib-json-field-separator`; see below for details.
-- Anything that doesn't match any of the categories above is converted to a string using `(format "%s" value)`, after which any newlines are removed and replaced with a space.
+- Anything that doesn't match any of the categories above is converted to a string using `(format "%s" value)`, after which any newlines are removed and replaced with a space. This is a catch-all that shouldn't be necessary in valid CSL-JSON files.
 
 The optional argument `short` only applies to date fields. If `short` is non-nil, a date field contains just the year; month and day parts are ignored. If no year part can be found, `short` returns the string `XXXX`. Note that with `short`, other parts of the date field are ignored.
 
