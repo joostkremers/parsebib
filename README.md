@@ -113,7 +113,7 @@ The reading functions return `nil` if they do not find the element they should b
 
 The support for CLS-JSON files comprises just one function: `parsebib-parse-json-buffer`. The actual parsing of the JSON data is performed by Emacs itself, either by the native JSON parsing routines (starting with Emacs 27.1, if available), or the built-in Elisp library `json.el`. `Parsebib` makes sure that the data is returned in a format that is similar to what is returned for `.bib` files.
 
-Note, however, that the data format is not identical. For one, the entry types and field names are different. Especially relevant is the fact that in BibTeX data, the entry type and entry key are stored in the alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. Furthermore, it is important to keep in mind that in BibTeX data, the field names in an alists representing an entry are strings, while in CSL-JSON data, they are symbols.
+Note, however, that the data format is not identical. For one, the entry types and field names are different. Especially relevant is the fact that in BibTeX data, the entry type and entry key are stored in the alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. Furthermore, it is important to keep in mind that in BibTeX data, the field names in an alist representing an entry are strings, while in CSL-JSON data, they are symbols.
 
 As a last point, the field values of an entry in BibTeX are always returned as strings, whereas the values in CSL-JSON data may be strings, numbers, or alists. The caller can request that all values be converted to strings, however.
 
