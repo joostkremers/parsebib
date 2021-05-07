@@ -705,7 +705,8 @@ field, a `parsebib-entry-type-error' is raised."
       (setq entries (make-hash-table :test #'equal)))
   (save-excursion
     (goto-char (point-min))
-    (let ((entry-vector (if (fboundp 'json-parse-buffer)
+    (let ((entry-vector (if (and (fboundp 'json-parse-buffer)
+                                 (json-serialize '((test . 1)))) ; Returns nil if native json support isn't working for some reason.
                             (json-parse-buffer :object-type 'alist)
                           (let ((json-object-type 'alist))
                             (json-read)))))
