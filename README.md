@@ -170,7 +170,7 @@ This variable holds the template used for converting name fields. Its default va
 
 The elements of a name field appear in the string in the order provided in the template. Elements that are not part of a particular name field are ignored, including any punctuation and white space contained inside the braces. So for example, if a name field does not have a `suffix`, the comma-space appearing inside the `{, suffix}` part of the template is not included in the final string.
 
-It is possible to modify the form of the resulting string by `let`-binding `parsebib-json-name-field-template` before calling `parsebib-parse-buffer`, `parsebib-stringify-json` or `parsebib-stringify-json-field`.
+It is possible to modify the form of the resulting string by `let`-binding `parsebib-json-name-field-template` before calling `parsebib-parse-json-buffer`, `parsebib-stringify-json` or `parsebib-stringify-json-field`.
 
 #### `parsebib-json-name-field-separator` ####
 
