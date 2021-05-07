@@ -704,22 +704,29 @@ field, a `parsebib-entry-type-error' is raised."
   (or (and (hash-table-p entries)
            (eq (hash-table-test entries) 'equal))
       (setq entries (make-hash-table :test #'equal)))
-  (save-excursion
-    (goto-char (point-min))
-    (let ((entry-vector (if (and (fboundp 'json-parse-buffer)
-                                 (json-serialize '((test . 1)))) ; Returns nil if native json support isn't working for some reason.
-                            (json-parse-buffer :object-type 'alist)
-                          (let ((json-object-type 'alist))
-                            (json-read)))))
-      (mapc (lambda (entry)
-              (let ((id (alist-get "id" entry nil nil #'string=)))
-                (if id
-                    (puthash id (if stringify
-                                    (parsebib-stringify-json entry year-only)
-                                  entry)
-                             entries)
-                  (signal 'parsebib-entry-type-error (list entry)))))
-            entry-vector)))
+  (let ((parser (if (and (fboundp 'json-serialize)
+                         (json-serialize '((test . 1)))) ; Returns nil if native json support isn't working for some reason.
+                    (lambda ()
+                      (json-parse-buffer :object-type 'alist))
+                  (lambda ()
+                    (let ((json-object-type 'alist))
+                      (json-read))))))
+    (save-excursion
+      (goto-char (point-min))
+      (if (not (looking-at-p "[\n\t ]*\\["))
+          (error "Not a valid CSL-JSON file"))
+      (let ((continue t))
+        (while continue
+          (skip-chars-forward "^{")
+          (if-let ((entry (funcall parser))
+                   (id (alist-get 'id entry)))
+              (puthash id (if stringify
+                              (parsebib-stringify-json entry year-only)
+                            entry)
+                       entries)
+            (signal 'parsebib-entry-type-error (list entry)))
+          (if (not (looking-at-p "[\n-t ]*,"))
+              (setq continue nil))))))
   entries)
 
 (defun parsebib-stringify-json (entry &optional year-only)
