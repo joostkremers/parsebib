@@ -840,7 +840,8 @@ have no value in NAME are ignored."
   "Convert DATE to a string.
 DATE is the value of a CSL-JSON date field.  If SHORT is non-nil,
 try to return only a year (in a date range, just the year of the
-first date)."
+first date).  If no year part is present, SHORT returns
+\"XXXX\"."
   (if short
       (if-let ((date-parts (alist-get 'date-parts date))
                (first-date (aref date-parts 0))
