@@ -789,12 +789,14 @@ symbols."
                                        "")))))
     (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
 
-(defun parsebib-stringify-json-field (field)
+(defun parsebib-stringify-json-field (field &optional short)
   "Return the value of FIELD as a string.
 FIELD is a cons cell that constitutes a CSL-JSON field-value
 pair.  The car is the key, the cdr the value.  If the value is a
 string, return it unchanged.  Otherwise, convert it into a
-string."
+string.  SHORT is only relevant for date fields: if it is
+non-nil, return just a year, or the string \"XXXX\" if no year
+part is present."
   (let ((key (car field))
         (value (cdr field)))
     (cond
@@ -808,7 +810,7 @@ string."
       (parsebib--json-stringify-name-field value))
 
      ((memq key parsebib--json-date-fields)
-      (parsebib--json-stringify-date-field value))
+      (parsebib--json-stringify-date-field value short))
 
      ;; In CSL-JSON v1.0, the only array field besides name and date fields
      ;; is "categories".  It has an array of strings as value, so the `format'
