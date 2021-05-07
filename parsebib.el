@@ -683,7 +683,7 @@ local variable is found, the value of the variable
 ;; CSL-JSON API ;;
 ;;;;;;;;;;;;;;;;;;
 
-(defun parsebib-parse-json-buffer (&optional entries stringify)
+(defun parsebib-parse-json-buffer (&optional entries stringify year-only)
   "Parse the current buffer and return all CSL-JSON data.
 The return value is a hash table containing all the elements.
 The hash table's keys are the \"id\" values of the entries, the
@@ -695,8 +695,9 @@ to store the entries.  Any existing entries with identical keys
 are overwritten.
 
 If STRINGIFY is non-nil, JSON values that are not
-strings (notably name and date fields) are converted to
-strings.
+strings (notably name and date fields) are converted to strings.
+If additionally YEAR-ONLY is non-nil, dates are shortened to just
+the year part.
 
 If a JSON object is encountered that does not have an \"id\"
 field, a `parsebib-entry-type-error' is raised."
@@ -714,21 +715,22 @@ field, a `parsebib-entry-type-error' is raised."
               (let ((id (alist-get "id" entry nil nil #'string=)))
                 (if id
                     (puthash id (if stringify
-                                    (parsebib-stringify-json entry)
+                                    (parsebib-stringify-json entry year-only)
                                   entry)
                              entries)
                   (signal 'parsebib-entry-type-error (list entry)))))
             entry-vector)))
   entries)
 
-(defun parsebib-stringify-json (entry)
+(defun parsebib-stringify-json (entry &optional year-only)
   "Return ENTRY with all non-string values converted to strings.
 ENTRY is a CSL-JSON entry in the form of an alist.  ENTRY is
-modified in place.  Return value is ENTRY."
+modified in place.  Return value is ENTRY.  If YEAR-ONLY is
+non-nil, date fields are shortened to just the year."
   (mapc (lambda (field)
           (unless (stringp (alist-get field entry))
             (setf (alist-get field entry)
-                  (parsebib-stringify-json-field (assq field entry)))))
+                  (parsebib-stringify-json-field (assq field entry) year-only))))
         (mapcar #'car entry))
   entry)
 
