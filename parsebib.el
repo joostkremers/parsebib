@@ -731,35 +731,35 @@ modified in place.  Return value is ENTRY."
         (mapcar #'car entry))
   entry)
 
-(defvar parsebib-json-name-fields  '(author
-                                     collection-editor
-                                     composer
-                                     container-author
-                                     director
-                                     editor
-                                     editorial-director
-                                     illustrator
-                                     interviewer
-                                     original-author
-                                     recipient
-                                     reviewed-author
-                                     translator))
+(defvar parsebib--json-name-fields  '(author
+                                      collection-editor
+                                      composer
+                                      container-author
+                                      director
+                                      editor
+                                      editorial-director
+                                      illustrator
+                                      interviewer
+                                      original-author
+                                      recipient
+                                      reviewed-author
+                                      translator))
 
-(defvar parsebib-json-date-fields '(accessed
-                                    container
-                                    event-date
-                                    issued
-                                    original-date
-                                    submitted))
+(defvar parsebib--json-date-fields '(accessed
+                                     container
+                                     event-date
+                                     issued
+                                     original-date
+                                     submitted))
 
-(defvar parsebib-json-number-fields '(chapter-number
-                                      collection-number
-                                      edition
-                                      issue
-                                      number
-                                      number-of-pages
-                                      number-of-volumes
-                                      volume))
+(defvar parsebib--json-number-fields '(chapter-number
+                                       collection-number
+                                       edition
+                                       issue
+                                       number
+                                       number-of-pages
+                                       number-of-volumes
+                                       volume))
 
 (defvar parsebib-json-name-field-template "{non-dropping-particle }{family, }{given}{ dropping-particle}{, suffix}{literal}"
   "Template used to display name fields.")
@@ -803,10 +803,10 @@ string."
      ((numberp value)
       (format "%s" value))
 
-     ((memq key parsebib-json-name-fields)
+     ((memq key parsebib--json-name-fields)
       (parsebib--json-stringify-name-field value))
 
-     ((memq key parsebib-json-date-fields)
+     ((memq key parsebib--json-date-fields)
       (parsebib--json-stringify-date-field value))
 
      ;; In CSL-JSON v1.0, the only array field besides name and date fields
