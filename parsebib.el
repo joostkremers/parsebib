@@ -447,7 +447,7 @@ point."
    into hashid-fields
    finally return (mapconcat #'identity hashid-fields "")))
 
-(defun parsebib-read-entry (type &optional pos strings)
+(defun parsebib-read-entry (type &optional pos strings keep-fields)
   "Read a BibTeX entry of type TYPE at the line POS is on.
 TYPE should be a string and should not contain the @
 sign.  The return value is the entry as an alist of (<field> .
@@ -471,7 +471,12 @@ type is valid.
 
 If STRINGS is provided, it should be a hash table with string
 abbreviations, which are used to expand abbrevs in the entry's
-fields."
+fields.
+
+KEEP-FIELDS is a list of the field names (as strings) to be read
+and included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in KEEP-FIELDS.
+If KEEP-FIELDS is nil, all fields are returned."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
     (when pos (goto-char pos))
     (beginning-of-line)
@@ -489,7 +494,10 @@ fields."
         (or key (setq key "")) ; if no key was found, we pretend it's empty and try to read the entry anyway
         (skip-chars-forward "^," limit) ; move to the comma after the entry key
         (let ((fields (cl-loop for field = (parsebib--find-bibtex-field limit strings)
-                               while field collect field)))
+                               while field
+                               if (or (not keep-fields)
+                                      (member-ignore-case (car field) keep-fields))
+                               collect field)))
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
           (if parsebib-hashid-fields
@@ -560,7 +568,7 @@ themselves using the @String definitions already stored in HASH."
                (puthash (car string) (cdr string) hash)))
     hash))
 
-(defun parsebib-collect-entries (&optional hash strings inheritance)
+(defun parsebib-collect-entries (&optional hash strings inheritance keep-fields)
   "Collect all entries in the current buffer.
 Return value is a hash table containing the entries.  If HASH is
 a hash table, with test function `equal', it is used to store the
@@ -580,7 +588,12 @@ such an inheritance schema.)  It can also be the symbol t, in
 which case the local variable block is checked for a
 dialect (using the variable `bibtex-dialect'), or, if no such
 local variable is found, the value of the variable
-`bibtex-dialect'."
+`bibtex-dialect'.
+
+KEEP-FIELDS is a list of the field names (as strings) to be read
+and included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in KEEP-FIELDS.
+If KEEP-FIELDS is nil, all fields are returned."
   (or (and (hash-table-p hash)
            (eq 'equal (hash-table-test hash)))
       (setq hash (make-hash-table :test #'equal)))
@@ -594,7 +607,7 @@ local variable is found, the value of the variable
              for entry-type = (parsebib-find-next-item)
              while entry-type do
              (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry entry-type nil strings))
+               (setq entry (parsebib-read-entry entry-type nil strings keep-fields))
                (if entry
                    (puthash (cdr (assoc-string "=key=" entry)) entry hash))))
     (when inheritance
@@ -617,7 +630,7 @@ file.  Return nil if no dialect is found."
                      (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
             (intern (match-string 1 comment))))))))
 
-(defun parsebib-parse-bib-buffer (&optional entries strings expand-strings inheritance)
+(defun parsebib-parse-bib-buffer (&optional entries strings expand-strings inheritance keep-fields)
   "Parse the current buffer and return all BibTeX data.
 Return list of five elements: a hash table with the entries, a
 hash table with the @String definitions, a list of @Preamble
@@ -646,7 +659,12 @@ such an inheritance schema.)  It can also be the symbol t, in
 which case the local variable block is checked for a
 dialect (using the variable `bibtex-dialect'), or, if no such
 local variable is found, the value of the variable
-`bibtex-dialect'."
+`bibtex-dialect'.
+
+KEEP-FIELDS is a list of the field names (as strings) to be read
+and included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in KEEP-FIELDS.
+If KEEP-FIELDS is nil, all fields are returned."
   (save-excursion
     (goto-char (point-min))
     (or (and (hash-table-p entries)
@@ -671,7 +689,7 @@ local variable is found, the value of the variable
                 ((cl-equalp item "comment")
                  (push (parsebib-read-comment) comments))
                 ((stringp item)
-                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings))))
+                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings) keep-fields)))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
       (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
@@ -683,7 +701,7 @@ local variable is found, the value of the variable
 ;; CSL-JSON API ;;
 ;;;;;;;;;;;;;;;;;;
 
-(defun parsebib-parse-json-buffer (&optional entries stringify year-only)
+(defun parsebib-parse-json-buffer (&optional entries stringify year-only fields)
   "Parse the current buffer and return all CSL-JSON data.
 The return value is a hash table containing all the elements.
 The hash table's keys are the \"id\" values of the entries, the
@@ -698,6 +716,10 @@ If STRINGIFY is non-nil, JSON values that are not
 strings (notably name and date fields) are converted to strings.
 If additionally YEAR-ONLY is non-nil, dates are shortened to just
 the year part.
+
+FIELDS is a list of field names (as symbols) to be read and
+included in the result.  Fields not in the list are ignored.  If
+FIELDS is nil, all fields are returned.
 
 If a JSON object is encountered that does not have an \"id\"
 field, a `parsebib-entry-type-error' is raised."
@@ -720,10 +742,15 @@ field, a `parsebib-entry-type-error' is raised."
           (skip-chars-forward "^{")
           (if-let ((entry (funcall parser))
                    (id (alist-get 'id entry)))
-              (puthash id (if stringify
-                              (parsebib-stringify-json entry year-only)
-                            entry)
-                       entries)
+              (progn
+                (when fields
+                  (setq entry (seq-filter (lambda (elt)
+                                            (memq (car elt) fields))
+                                          entry)))
+                (puthash id (if stringify
+                                (parsebib-stringify-json entry year-only)
+                              entry)
+                         entries))
             (signal 'parsebib-entry-type-error (list entry)))
           (if (not (looking-at-p "[\n-t ]*,"))
               (setq continue nil))))))
