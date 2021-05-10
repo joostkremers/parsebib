@@ -447,7 +447,7 @@ point."
    into hashid-fields
    finally return (mapconcat #'identity hashid-fields "")))
 
-(defun parsebib-read-entry (type &optional pos strings keep-fields)
+(defun parsebib-read-entry (type &optional pos strings fields)
   "Read a BibTeX entry of type TYPE at the line POS is on.
 TYPE should be a string and should not contain the @
 sign.  The return value is the entry as an alist of (<field> .
@@ -473,10 +473,10 @@ If STRINGS is provided, it should be a hash table with string
 abbreviations, which are used to expand abbrevs in the entry's
 fields.
 
-KEEP-FIELDS is a list of the field names (as strings) to be read
-and included in the result.  Fields not in the list are ignored.
-Case is ignored when comparing fields to the list in KEEP-FIELDS.
-If KEEP-FIELDS is nil, all fields are returned."
+FIELDS is a list of the field names (as strings) to be read and
+included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in FIELDS.  If
+FIELDS is nil, all fields are returned."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
     (when pos (goto-char pos))
     (beginning-of-line)
@@ -495,8 +495,8 @@ If KEEP-FIELDS is nil, all fields are returned."
         (skip-chars-forward "^," limit) ; move to the comma after the entry key
         (let ((fields (cl-loop for field = (parsebib--find-bibtex-field limit strings)
                                while field
-                               if (or (not keep-fields)
-                                      (member-ignore-case (car field) keep-fields))
+                               if (or (not fields)
+                                      (member-ignore-case (car field) fields))
                                collect field)))
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
@@ -548,7 +548,7 @@ Return a list of strings, each string a separate @Comment."
                  (push (parsebib-read-comment) res)))
       (nreverse (delq nil res)))))
 
-(defun parsebib-collect-strings (&optional hash expand-strings)
+(cl-defun parsebib-collect-strings (&key hash expand-strings)
   "Collect all @String definitions in the current buffer.
 Return value is a hash with the abbreviations as keys and the
 expansions as values.  If HASH is a hash table with test function
@@ -568,8 +568,8 @@ themselves using the @String definitions already stored in HASH."
                (puthash (car string) (cdr string) hash)))
     hash))
 
-(defun parsebib-collect-entries (&optional hash strings inheritance keep-fields)
-  "Collect all entries in the current buffer.
+(cl-defun parsebib-collect-bib-entries (&key hash strings inheritance fields)
+  "Collect all BibTeX / biblatex entries in the current buffer.
 Return value is a hash table containing the entries.  If HASH is
 a hash table, with test function `equal', it is used to store the
 entries.  If STRINGS is non-nil, it should be a hash table of
@@ -590,10 +590,10 @@ dialect (using the variable `bibtex-dialect'), or, if no such
 local variable is found, the value of the variable
 `bibtex-dialect'.
 
-KEEP-FIELDS is a list of the field names (as strings) to be read
-and included in the result.  Fields not in the list are ignored.
-Case is ignored when comparing fields to the list in KEEP-FIELDS.
-If KEEP-FIELDS is nil, all fields are returned."
+FIELDS is a list of the field names (as strings) to be read and
+included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in FIELDS.  If
+FIELDS is nil, all fields are returned."
   (or (and (hash-table-p hash)
            (eq 'equal (hash-table-test hash)))
       (setq hash (make-hash-table :test #'equal)))
@@ -607,7 +607,7 @@ If KEEP-FIELDS is nil, all fields are returned."
              for entry-type = (parsebib-find-next-item)
              while entry-type do
              (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry entry-type nil strings keep-fields))
+               (setq entry (parsebib-read-entry entry-type nil strings fields))
                (if entry
                    (puthash (cdr (assoc-string "=key=" entry)) entry hash))))
     (when inheritance
@@ -630,7 +630,7 @@ file.  Return nil if no dialect is found."
                      (string-match (concat "bibtex-dialect: " (regexp-opt (mapcar #'symbol-name bibtex-dialect-list) t)) comment))
             (intern (match-string 1 comment))))))))
 
-(defun parsebib-parse-bib-buffer (&optional entries strings expand-strings inheritance keep-fields)
+(cl-defun parsebib-parse-bib-buffer (&key entries strings expand-strings inheritance fields)
   "Parse the current buffer and return all BibTeX data.
 Return list of five elements: a hash table with the entries, a
 hash table with the @String definitions, a list of @Preamble
@@ -661,10 +661,10 @@ dialect (using the variable `bibtex-dialect'), or, if no such
 local variable is found, the value of the variable
 `bibtex-dialect'.
 
-KEEP-FIELDS is a list of the field names (as strings) to be read
-and included in the result.  Fields not in the list are ignored.
-Case is ignored when comparing fields to the list in KEEP-FIELDS.
-If KEEP-FIELDS is nil, all fields are returned."
+FIELDS is a list of the field names (as strings) to be read and
+included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in FIELDS.  If
+FIELDS is nil, all fields are returned."
   (save-excursion
     (goto-char (point-min))
     (or (and (hash-table-p entries)
@@ -689,19 +689,17 @@ If KEEP-FIELDS is nil, all fields are returned."
                 ((cl-equalp item "comment")
                  (push (parsebib-read-comment) comments))
                 ((stringp item)
-                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings) keep-fields)))
+                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings) fields)))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
       (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
       (list entries strings (nreverse preambles) (nreverse comments) dialect))))
 
-(define-obsolete-function-alias 'parsebib-parse-buffer 'parsebib-parse-bib-buffer "Parsebib 3.0")
-
 ;;;;;;;;;;;;;;;;;;
 ;; CSL-JSON API ;;
 ;;;;;;;;;;;;;;;;;;
 
-(defun parsebib-parse-json-buffer (&optional entries stringify year-only fields)
+(cl-defun parsebib-parse-json-buffer (&key entries stringify year-only fields)
   "Parse the current buffer and return all CSL-JSON data.
 The return value is a hash table containing all the elements.
 The hash table's keys are the \"id\" values of the entries, the
