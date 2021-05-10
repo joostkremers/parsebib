@@ -37,7 +37,7 @@ Expanding `@Strings` and resolving cross-references can also be done across file
 The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point.
 
 
-#### `parsebib-collect-entries (&optional hash strings inheritance)` ####
+#### `parsebib-collect-bib-entries (&key hash strings inheritance fields)` ####
 
 Collect all entries in the current buffer and return them as a hash table, where the keys correspond to the BibTeX keys and the values are alists consisting of `(<field> . <value>)` pairs of the relevant entry. In this alist, the BibTeX key and the entry type are stored under `=key=` and `=type=`, respectively. Note that both `<field>` and `<value>` are strings. 
 
@@ -47,10 +47,10 @@ If the argument `strings` is present, `@string` abbreviations are expanded. `str
 
 If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer above the entry for which the cross-references are resolved and against the entries in `hash`.
 
-The argument `keep-fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be strings; comparison is case-insensitive.
+The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be strings; comparison is case-insensitive.
 
 
-#### `parsebib-collect-strings (&optional hash expand-strings)` ####
+#### `parsebib-collect-strings (&key hash expand-strings)` ####
 
 Collect all `@string` definitions in the current buffer and return them as a hash table. The argument `hash` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created.
 
@@ -72,7 +72,7 @@ Collect all `@comments` in the current buffer and return them as a list.
 Find and return the BibTeX dialect for the current buffer. The BibTeX dialect is either `BibTeX` or `biblatex` and can be defined in a local-variable block at the end of the file.
 
 
-#### `parsebib-parse-bib-buffer (&optional entries strings expand-strings inheritance keep-fields)` ####
+#### `parsebib-parse-bib-buffer (&keys entries strings expand-strings inheritance fields)` ####
 
 Collect all BibTeX data in the current buffer. Return a five-element list:
 
@@ -82,14 +82,14 @@ The `<entries>` and `<strings>` are hash tables, `<preambles>` and `<comments>` 
 
 If the arguments `entries` and `strings` are present, they should be hash tables with `equal` as the `:test` function. They are then used to store the entries and strings, respectively.
 
-The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and `inheritance` functions as the same-name argument in `parsebib-collect-entries`, `keep-fields` functions as the same-name argument in `paresbib-collect-entries`.
+The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and `inheritance` functions as the same-name argument in `parsebib-collect-bib-entries`, `fields` functions as the same-name argument in `paresbib-collect-bib-entries`.
 
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 
 
 #### `parsebib-expand-xrefs (entries inheritance)` ####
 
-Expand cross-references in `entries` according to inheritance schema `inheritance`. `entries` should be a hash table as returned by `parsebib-collect-entries`. Each entry with a `crossref` field is expanded as described above. The results are stored in the hash table `entries` again, the return value of this function is always `nil`.
+Expand cross-references in `entries` according to inheritance schema `inheritance`. `entries` should be a hash table as returned by `parsebib-collect-bib-entries`. Each entry with a `crossref` field is expanded as described above. The results are stored in the hash table `entries` again, the return value of this function is always `nil`.
 
 
 ### Lower-level API ###
@@ -131,7 +131,7 @@ Note, however, that the data format is not identical. For one, the entry types a
 As a last point, the field values of an entry in BibTeX are always returned as strings, whereas the values in CSL-JSON data may be strings, numbers, or alists. The caller can request that all values be converted to strings, however.
 
 
-#### `parsebib-parse-json-buffer (&optional entries stringify year-only keep-fields)` ####
+#### `parsebib-parse-json-buffer (&key entries stringify year-only fields)` ####
 
 Collect all CSL-JSON data in the current buffer and return the result. The return value is a hash table, where the keys correspond to the identifiers of the entries and the values are alists consisting of `(<field> . <value>)` pairs of the relevant entry. In this alist, the identifier is stored under the key `id` and the entry type is stored under `type`. `<field>` is a symbol, while `<value>` can be a string, a vector (array) or another alist.
 
@@ -145,7 +145,7 @@ The argument `year-only` controls the way dates are converted to strings. If it 
 
 The way values are converted to strings can be customised to some extent by the use of certain special variables, discussed below.
 
-The argument `keep-fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be symbols; comparison is case-sensitive.
+The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be symbols; comparison is case-sensitive.
 
 
 #### `parsebib-stringify-json (entry &optional year-only)`  ####
