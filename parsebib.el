@@ -632,7 +632,7 @@ file.  Return nil if no dialect is found."
 
 (cl-defun parsebib-parse-bib-buffer (&key entries strings expand-strings inheritance fields)
   "Parse the current buffer and return all BibTeX data.
-Return list of five elements: a hash table with the entries, a
+Return a list of five elements: a hash table with the entries, a
 hash table with the @String definitions, a list of @Preamble
 definitions, a list of @Comments and the BibTeX dialect, if
 present in the file.
