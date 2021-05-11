@@ -548,41 +548,46 @@ Return a list of strings, each string a separate @Comment."
                  (push (parsebib-read-comment) res)))
       (nreverse (delq nil res)))))
 
-(cl-defun parsebib-collect-strings (&key hash expand-strings)
+(cl-defun parsebib-collect-strings (&key strings expand-strings)
   "Collect all @String definitions in the current buffer.
 Return value is a hash with the abbreviations as keys and the
-expansions as values.  If HASH is a hash table with test function
-`equal', it is used to store the @String definitions.  If
-EXPAND-STRINGS is non-nil, @String expansions are expanded
-themselves using the @String definitions already stored in HASH."
-  (or (and (hash-table-p hash)
-           (eq 'equal (hash-table-test hash)))
-      (setq hash (make-hash-table :test #'equal)))
+expansions as values.  If STRINGS is a hash table with test
+function `equal', it is used to store the @String definitions.
+If EXPAND-STRINGS is non-nil, @String expansions are expanded
+themselves using the @String definitions already stored in
+STRINGS."
+  (or (and (hash-table-p strings)
+           (eq 'equal (hash-table-test strings)))
+      (setq strings (make-hash-table :test #'equal)))
   (save-excursion
     (goto-char (point-min))
     (cl-loop with string = nil
              for item = (parsebib-find-next-item)
              while item do
              (when (cl-equalp item "string")
-               (setq string (parsebib-read-string nil (if expand-strings hash)))
-               (puthash (car string) (cdr string) hash)))
-    hash))
+               (setq string (parsebib-read-string nil (if expand-strings strings)))
+               (puthash (car string) (cdr string) strings)))
+    strings))
 
-(cl-defun parsebib-collect-bib-entries (&key hash strings inheritance fields)
+(cl-defun parsebib-collect-bib-entries (&key entries strings inheritance fields)
   "Collect all BibTeX / biblatex entries in the current buffer.
-Return value is a hash table containing the entries.  If HASH is
-a hash table, with test function `equal', it is used to store the
-entries.  If STRINGS is non-nil, it should be a hash table of
-string definitions, which are used to expand abbreviations used
-in the entries.
+Return value is a hash table containing the entries.  If ENTRIES
+is a hash table with test function `equal', it is used to store
+the entries collected in the buffer.  Note that ENTRIES does not
+have to be empty.  It may contain entries from a previous parse.
+
+If STRINGS is non-nil, it should be a hash table of string
+definitions, which are used to expand abbreviations used in the
+entries.
 
 If INHERITANCE is non-nil, cross-references in the entries are
 resolved: if the crossref field of an entry points to an entry
-already in HASH, the fields of the latter that do not occur in
-the entry are added to it.  INHERITANCE indicates the inheritance
-schema used for determining which fields inherit from which
-fields.  It can be a symbol `BibTeX' or `biblatex', or it can be
-an explicit inheritance schema.  (See the variable
+already in ENTRIES (which includes the entries that appear
+earlier in the buffer), the fields of the latter that do not occur
+in the entry are added to it.  INHERITANCE indicates the
+inheritance schema used for determining which fields inherit from
+which fields.  It can be a symbol `BibTeX' or `biblatex', or it
+can be an explicit inheritance schema.  (See the variable
 `parsebib--biblatex-inheritances' for details on the structure of
 such an inheritance schema.)  It can also be the symbol t, in
 which case the local variable block is checked for a
@@ -594,9 +599,9 @@ FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored.
 Case is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
-  (or (and (hash-table-p hash)
-           (eq 'equal (hash-table-test hash)))
-      (setq hash (make-hash-table :test #'equal)))
+  (or (and (hash-table-p entries)
+           (eq 'equal (hash-table-test entries)))
+      (setq entries (make-hash-table :test #'equal)))
   (if (eq inheritance t)
       (setq inheritance (or (parsebib-find-bibtex-dialect)
                             bibtex-dialect
@@ -609,10 +614,10 @@ FIELDS is nil, all fields are returned."
              (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
                (setq entry (parsebib-read-entry entry-type nil strings fields))
                (if entry
-                   (puthash (cdr (assoc-string "=key=" entry)) entry hash))))
+                   (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
     (when inheritance
-      (parsebib-expand-xrefs hash inheritance))
-    hash))
+      (parsebib-expand-xrefs entries inheritance))
+    entries))
 
 (defun parsebib-find-bibtex-dialect ()
   "Find the BibTeX dialect of a file if one is set.

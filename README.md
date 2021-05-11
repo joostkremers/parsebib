@@ -34,14 +34,14 @@ Expanding `@Strings` and resolving cross-references can also be done across file
 
 ### Higher-level API ###
 
-The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point.
+The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point. Note that the arguments in these functions (except `parsebib-expand-xrefs`) are keyword arguments.
 
 
-#### `parsebib-collect-bib-entries (&key hash strings inheritance fields)` ####
+#### `parsebib-collect-bib-entries (&key entries strings inheritance fields)` ####
 
 Collect all entries in the current buffer and return them as a hash table, where the keys correspond to the BibTeX keys and the values are alists consisting of `(<field> . <value>)` pairs of the relevant entry. In this alist, the BibTeX key and the entry type are stored under `=key=` and `=type=`, respectively. Note that both `<field>` and `<value>` are strings. 
 
-The argument `hash` can be used to pass a (possibly non-empty) hash table in which the entries are stored. This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file.
+The argument `entries` can be used to pass a (possibly non-empty) hash table in which the entries are stored. This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file.
 
 If the argument `strings` is present, `@string` abbreviations are expanded. `strings` should be a hash table of `@string` definitions as returned by `parsebib-collect-strings`.
 
@@ -50,11 +50,11 @@ If the argument `inheritance` is present, cross-references among entries are res
 The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be strings; comparison is case-insensitive.
 
 
-#### `parsebib-collect-strings (&key hash expand-strings)` ####
+#### `parsebib-collect-strings (&key strings expand-strings)` ####
 
-Collect all `@string` definitions in the current buffer and return them as a hash table. The argument `hash` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created.
+Collect all `@string` definitions in the current buffer and return them as a hash table. The argument `strings` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created.
 
-The argument `expand-strings` is a boolean value. If non-nil, any abbreviations found in the string definitions are expanded against the `@string` definitions appearing earlier in the `.bib` file and against `@string` definitions in `hash`, if provided.
+The argument `expand-strings` is a boolean value. If non-nil, any abbreviations found in the string definitions are expanded against the `@string` definitions appearing earlier in the `.bib` file and against `@string` definitions in `strings`, if provided.
 
 
 #### `parsebib-collect-preambles` ####
