@@ -178,7 +178,7 @@ target field is set to the symbol `:none'.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; matching and parsing stuff ;;
+;; Matching and parsing stuff ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib--looking-at-goto-end (str &optional match)
@@ -216,14 +216,14 @@ if a matching delimiter was found."
   "Move forward to the closing brace matching the opening brace at point."
   (with-syntax-table bibtex-braced-string-syntax-table
     (forward-sexp 1)
-    ;; if forward-sexp does not result in an error, we want to return t
+    ;; If forward-sexp does not result in an error, we want to return t.
     t))
 
 (defun parsebib--match-quote-forward ()
   "Move to the closing double quote matching the quote at point."
   (with-syntax-table bibtex-quoted-string-syntax-table
     (forward-sexp 1)
-    ;; if forward-sexp does not result in an error, we want to return t
+    ;; If forward-sexp does not result in an error, we want to return t.
     t))
 
 (defun parsebib--parse-value (limit &optional strings)
@@ -250,13 +250,13 @@ double quotes around field values are removed."
         (goto-char (match-end 0)))
        ((looking-at "[[:space:]]*#[[:space:]]*")
         (goto-char (match-end 0)))
-       (t (forward-char 1)))) ; so as not to get stuck in an infinite loop.
+       (t (forward-char 1)))) ; So as not to get stuck in an infinite loop.
     (if strings
         (string-join (parsebib--expand-strings (nreverse res) strings))
       (string-join (nreverse res) " # "))))
 
 ;;;;;;;;;;;;;;;;;;;;;
-;; expanding stuff ;;
+;; Expanding stuff ;;
 ;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib--expand-strings (strings abbrevs)
@@ -345,7 +345,7 @@ for INHERITANCES to be nil."
      (t target-field))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; low-level BibTeX/biblatex API ;;
+;; Low-level BibTeX/biblatex API ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-find-next-item (&optional pos)
@@ -416,7 +416,7 @@ expansion."
                    (point))))
       (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
       (let ((abbr (match-string-no-properties 1)))
-        (when (and abbr (> (length abbr) 0))            ; if we found an abbrev
+        (when (and abbr (> (length abbr) 0))            ; If we found an abbrev.
           (let ((expansion (parsebib--parse-value limit strings)))
             (goto-char limit)
             (cons abbr expansion)))))))
@@ -442,7 +442,7 @@ point."
   (cl-loop
    for field in parsebib-hashid-fields
    collect (or
-            ;; remove braces {}
+            ;; Remove braces {}.
             (replace-regexp-in-string "^{\\|}\\'" "" (cdr (assoc-string field fields 'case-fold)))
             "")
    into hashid-fields
@@ -482,18 +482,18 @@ FIELDS is nil, all fields are returned."
     (when pos (goto-char pos))
     (beginning-of-line)
     (when (parsebib--looking-at-goto-end (concat parsebib--entry-start type "[[:space:]]*[\(\{]"))
-      ;; find the end of the entry and the beginning of the entry key
+      ;; Find the end of the entry and the beginning of the entry key.
       (let* ((limit (save-excursion
                       (backward-char)
                       (parsebib--match-paren-forward)
                       (point)))
              (beg (progn
-                    (skip-chars-forward " \n\t\f") ; note the space!
+                    (skip-chars-forward " \n\t\f") ; Note the space!
                     (point)))
              (key (when (parsebib--looking-at-goto-end (concat "\\(" parsebib--key-regexp "\\)[ \t\n\f]*,") 1)
                     (buffer-substring-no-properties beg (point)))))
-        (or key (setq key "")) ; if no key was found, we pretend it's empty and try to read the entry anyway
-        (skip-chars-forward "^," limit) ; move to the comma after the entry key
+        (or key (setq key "")) ; If no key was found, we pretend it's empty and try to read the entry anyway.
+        (skip-chars-forward "^," limit) ; Move to the comma after the entry key.
         (let ((fields (cl-loop for field = (parsebib--find-bibtex-field limit strings)
                                while field
                                if (or (not fields)
@@ -513,8 +513,8 @@ cons (FIELD . VALUE), or nil if no field was found.
 If STRINGS is provided it should be a hash table with string
 abbreviations, which are used to expand abbrevs in the field's
 value."
-  (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; move to the first char of the field name
-  (unless (>= (point) limit)                      ; if we haven't reached the end of the entry
+  (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; Move to the first char of the field name.
+  (unless (>= (point) limit)                      ; If we haven't reached the end of the entry.
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let ((field-type (buffer-substring-no-properties beg (point))))
@@ -522,7 +522,7 @@ value."
               (cons field-type field-contents)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; high-level BibTeX/biblatex API ;;
+;; High-level BibTeX/biblatex API ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-collect-preambles ()
