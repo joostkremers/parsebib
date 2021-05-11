@@ -737,12 +737,23 @@ field, a `parsebib-entry-type-error' is raised."
                  (lambda ()
                    (let ((json-object-type 'alist))
                      (json-read))))))
+    ;; We do not read the entire file in one go, but instead parse each entry
+    ;; separately.  Large bibliographies would otherwise be returned as one
+    ;; gigantic vector, which then needs to be converted to a hash table.  If we
+    ;; need to convert some of the data because `stringify' is t, the data is
+    ;; held in memory twice.
     (save-excursion
       (goto-char (point-min))
+      ;; JSON is pretty strict, not even comments are allowed.  CSL-JSON
+      ;; requires that the file is essentially one big array, so we know that
+      ;; the first non-whitespace character in the file must be an opening
+      ;; bracket;
       (if (not (looking-at-p "[\n\t ]*\\["))
           (error "Not a valid CSL-JSON file"))
       (let ((continue t))
         (while continue
+          ;; We also know that the first non-whitespace character after that
+          ;; must be an opening brace:
           (skip-chars-forward "^{")
           (if-let ((entry (funcall parse))
                    (id (alist-get 'id entry)))
@@ -756,6 +767,9 @@ field, a `parsebib-entry-type-error' is raised."
                               entry)
                          entries))
             (signal 'parsebib-entry-type-error (list (point))))
+          ;; Parsing an entry moves point to the end of the entry.  The next
+          ;; character must be a comma if there is another entry.  If we're not
+          ;; seeing a comma, we've reached the end of the file:
           (if (not (looking-at-p "[\n-t ]*,"))
               (setq continue nil))))))
   entries)
