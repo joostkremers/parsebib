@@ -493,32 +493,39 @@ FIELDS is nil, all fields are returned."
                     (buffer-substring-no-properties beg (point)))))
         (or key (setq key "")) ; If no key was found, we pretend it's empty and try to read the entry anyway.
         (skip-chars-forward "^," limit) ; Move to the comma after the entry key.
-        (let ((fields (cl-loop for field = (parsebib--find-bibtex-field limit strings)
+        (let ((fields (cl-loop for field = (parsebib--parse-bibtex-field limit strings fields)
                                while field
-                               if (or (not fields)
-                                      (member-ignore-case (car field) fields))
-                               collect field)))
+                               if (consp field) collect field)))
           (push (cons "=type=" type) fields)
           (push (cons "=key=" key) fields)
           (if parsebib-hashid-fields
               (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-string fields))) fields))
           (nreverse fields))))))
 
-(defun parsebib--find-bibtex-field (limit &optional strings)
-  "Find the field after point.
+(defun parsebib--parse-bibtex-field (limit &optional strings fields)
+  "Parse the field starting at point.
 Do not search beyond LIMIT (a buffer position).  Return a
 cons (FIELD . VALUE), or nil if no field was found.
 
-If STRINGS is provided it should be a hash table with string
-abbreviations, which are used to expand abbrevs in the field's
-value."
+STRINGS is a hash table with string abbreviations, which are used
+to expand abbrevs in the field's value.
+
+FIELDS is a list of the field names (as strings) to be read and
+included in the result.  Fields not in the list are ignored,
+except \"=key=\" and \"=type\", which are always included.  Case
+is ignored when comparing fields to the list in FIELDS.  If
+FIELDS is nil, all fields are returned."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; Move to the first char of the field name.
   (unless (>= (point) limit)                      ; If we haven't reached the end of the entry.
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let ((field-type (buffer-substring-no-properties beg (point))))
-            (let ((field-contents (parsebib--parse-value limit strings)))
-              (cons field-type field-contents)))))))
+            (if (member-ignore-case field-type fields)
+                (let ((field-contents (parsebib--parse-bib-value limit strings)))
+                  (cons field-type field-contents))
+              ;; Skip over the field value.
+              (parsebib--parse-bib-value limit)
+              :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; High-level BibTeX/biblatex API ;;
@@ -596,8 +603,9 @@ local variable is found, the value of the variable
 `bibtex-dialect'.
 
 FIELDS is a list of the field names (as strings) to be read and
-included in the result.  Fields not in the list are ignored.
-Case is ignored when comparing fields to the list in FIELDS.  If
+included in the result.  Fields not in the list are ignored,
+except \"=key=\" and \"=type\", which are always included.  Case
+is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (or (and (hash-table-p entries)
            (eq 'equal (hash-table-test entries)))
@@ -667,8 +675,9 @@ local variable is found, the value of the variable
 `bibtex-dialect'.
 
 FIELDS is a list of the field names (as strings) to be read and
-included in the result.  Fields not in the list are ignored.
-Case is ignored when comparing fields to the list in FIELDS.  If
+included in the result.  Fields not in the list are ignored,
+except \"=key=\" and \"=type\", which are always included.  Case
+is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (save-excursion
     (goto-char (point-min))
@@ -721,14 +730,17 @@ If additionally YEAR-ONLY is non-nil, dates are shortened to just
 the year part.
 
 FIELDS is a list of field names (as symbols) to be read and
-included in the result.  Fields not in the list are ignored.  If
-FIELDS is nil, all fields are returned.
+included in the result.  Fields not in the list are ignored,
+except `id' and `type', which are always included.  If FIELDS is
+nil, all fields are returned.
 
 If a JSON object is encountered that does not have an \"id\"
 field, a `parsebib-entry-type-error' is raised."
   (or (and (hash-table-p entries)
            (eq (hash-table-test entries) 'equal))
       (setq entries (make-hash-table :test #'equal)))
+  (when fields
+    (setq fields (append '(id type) fields)))
   (let ((parse (if (and (fboundp 'json-serialize)
                         (json-serialize '((test . 1)))) ; Returns nil if native json support isn't working for some reason.
                    (lambda ()
