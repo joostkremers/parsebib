@@ -47,7 +47,7 @@
                     (require 'json)
                     (defvar json-object-type)))
 
-(define-error 'parsebib-entry-type-error "Illegal entry type" 'error)
+(define-error 'parsebib-entry-type-error "[Parsebib] Illegal entry type at point" 'error)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BibTeX / biblatex parser ;;
@@ -755,7 +755,7 @@ field, a `parsebib-entry-type-error' is raised."
                                 (parsebib-stringify-json entry year-only)
                               entry)
                          entries))
-            (signal 'parsebib-entry-type-error (list entry)))
+            (signal 'parsebib-entry-type-error (list (point))))
           (if (not (looking-at-p "[\n-t ]*,"))
               (setq continue nil))))))
   entries)
