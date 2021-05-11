@@ -730,13 +730,13 @@ field, a `parsebib-entry-type-error' is raised."
   (or (and (hash-table-p entries)
            (eq (hash-table-test entries) 'equal))
       (setq entries (make-hash-table :test #'equal)))
-  (let ((parser (if (and (fboundp 'json-serialize)
-                         (json-serialize '((test . 1)))) ; Returns nil if native json support isn't working for some reason.
-                    (lambda ()
-                      (json-parse-buffer :object-type 'alist))
-                  (lambda ()
-                    (let ((json-object-type 'alist))
-                      (json-read))))))
+  (let ((parse (if (and (fboundp 'json-serialize)
+                        (json-serialize '((test . 1)))) ; Returns nil if native json support isn't working for some reason.
+                   (lambda ()
+                     (json-parse-buffer :object-type 'alist))
+                 (lambda ()
+                   (let ((json-object-type 'alist))
+                     (json-read))))))
     (save-excursion
       (goto-char (point-min))
       (if (not (looking-at-p "[\n\t ]*\\["))
@@ -744,7 +744,7 @@ field, a `parsebib-entry-type-error' is raised."
       (let ((continue t))
         (while continue
           (skip-chars-forward "^{")
-          (if-let ((entry (funcall parser))
+          (if-let ((entry (funcall parse))
                    (id (alist-get 'id entry)))
               (progn
                 (when fields
