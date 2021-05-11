@@ -466,17 +466,16 @@ beginning of a line, but the entry must start at the beginning of
 the line POS is on.  If POS is nil, it defaults to point.
 
 ENTRY should not be \"Comment\", \"Preamble\" or \"String\", but
-is otherwise not limited to any set of possible entry types. If
-so required, the calling function has to ensure that the entry
-type is valid.
+is otherwise not limited to any set of possible entry types.
 
 If STRINGS is provided, it should be a hash table with string
 abbreviations, which are used to expand abbrevs in the entry's
 fields.
 
 FIELDS is a list of the field names (as strings) to be read and
-included in the result.  Fields not in the list are ignored.
-Case is ignored when comparing fields to the list in FIELDS.  If
+included in the result.  Fields not in the list are ignored,
+except \"=key=\" and \"=type\", which are always included.  Case
+is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
     (when pos (goto-char pos))
