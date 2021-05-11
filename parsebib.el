@@ -226,7 +226,7 @@ if a matching delimiter was found."
     ;; If forward-sexp does not result in an error, we want to return t.
     t))
 
-(defun parsebib--parse-value (limit &optional strings)
+(defun parsebib--parse-bib-value (limit &optional strings)
   "Parse value at point.
 A value is either a field value or a @String expansion.  Return
 the value as a string.  No parsing is done beyond LIMIT, but note
@@ -417,7 +417,7 @@ expansion."
       (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
       (let ((abbr (match-string-no-properties 1)))
         (when (and abbr (> (length abbr) 0))            ; If we found an abbrev.
-          (let ((expansion (parsebib--parse-value limit strings)))
+          (let ((expansion (parsebib--parse-bib-value limit strings)))
             (goto-char limit)
             (cons abbr expansion)))))))
 
