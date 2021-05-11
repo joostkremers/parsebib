@@ -58,98 +58,99 @@
 Hash ids can only be created for BibTeX/biblatex files.  The hash
 id is stored in the entry in the special field `=hashid='.")
 
-(defvar parsebib--biblatex-inheritances '(("all"
-					   "all"
-					   (("ids" . none)
-					    ("crossref" . none)
-					    ("xref" . none)
-					    ("entryset" . none)
-					    ("entrysubtype" . none)
-					    ("execute" . none)
-					    ("label" . none)
-					    ("options" . none)
-					    ("presort" . none)
-					    ("related" . none)
-					    ("relatedoptions" . none)
-					    ("relatedstring" . none)
-					    ("relatedtype" . none)
-					    ("shorthand" . none)
-					    ("shorthandintro" . none)
-					    ("sortkey" . none)))
+(defvar parsebib--biblatex-inheritances '(;; Source                        Target
+                                          ("all"                           "all"
+					   (("ids"                         . :none)
+					    ("crossref"                    . :none)
+					    ("xref"                        . :none)
+					    ("entryset"                    . :none)
+					    ("entrysubtype"                . :none)
+					    ("execute"                     . :none)
+					    ("label"                       . :none)
+					    ("options"                     . :none)
+					    ("presort"                     . :none)
+					    ("related"                     . :none)
+					    ("relatedoptions"              . :none)
+					    ("relatedstring"               . :none)
+					    ("relatedtype"                 . :none)
+					    ("shorthand"                   . :none)
+					    ("shorthandintro"              . :none)
+					    ("sortkey"                     . :none)))
 
-					  ("mvbook, book"
-					   "inbook, bookinbook, suppbook"
-					   (("author" . "author")
-					    ("author" . "bookauthor")))
+                                          ;; Source                        Target
+					  ("mvbook, book"                  "inbook, bookinbook, suppbook"
+					   (("author"                      . "author")
+					    ("author"                      . "bookauthor")))
 
-					  ("mvbook"
-					   "book, inbook, bookinbook, suppbook"
-					   (("title" . "maintitle")
-					    ("subtitle" . "mainsubtitle")
-					    ("titleaddon" . "maintitleaddon")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none)))
+                                          ;; Source                        Target
+					  ("mvbook"                        "book, inbook, bookinbook, suppbook"
+					   (("title"                       . "maintitle")
+					    ("subtitle"                    . "mainsubtitle")
+					    ("titleaddon"                  . "maintitleaddon")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none)))
 
-					  ("mvcollection, mvreference"
-					   "collection, reference, incollection, inreference, suppcollection"
-					   (("title" . "maintitle")
-					    ("subtitle" . "mainsubtitle")
-					    ("titleaddon" . "maintitleaddon")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none)))
+                                          ;; Source                        Target
+					  ("mvcollection, mvreference"     "collection, reference, incollection, inreference, suppcollection"
+					   (("title"                       . "maintitle")
+					    ("subtitle"                    . "mainsubtitle")
+					    ("titleaddon"                  . "maintitleaddon")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none)))
 
-					  ("mvproceedings"
-					   "proceedings, inproceedings"
-					   (("title" . "maintitle")
-					    ("subtitle" . "mainsubtitle")
-					    ("titleaddon" . "maintitleaddon")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none)))
+                                          ;; Source                        Target
+					  ("mvproceedings"                 "proceedings, inproceedings"
+					   (("title"                       . "maintitle")
+					    ("subtitle"                    . "mainsubtitle")
+					    ("titleaddon"                  . "maintitleaddon")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none)))
 
-					  ("book"
-					   "inbook, bookinbook, suppbook"
-					   (("title" . "booktitle")
-					    ("subtitle" . "booksubtitle")
-					    ("titleaddon" . "booktitleaddon")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none)))
+                                          ;; Source                        Target
+					  ("book"                          "inbook, bookinbook, suppbook"
+					   (("title"                       . "booktitle")
+					    ("subtitle"                    . "booksubtitle")
+					    ("titleaddon"                  . "booktitleaddon")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none)))
 
-					  ("collection, reference"
-					   "incollection, inreference, suppcollection"
-					   (("title" . "booktitle")
-					    ("subtitle" . "booksubtitle")
-					    ("titleaddon" . "booktitleaddon")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none)))
+                                          ;; Source                        Target
+					  ("collection, reference"         "incollection, inreference, suppcollection"
+					   (("title"                       . "booktitle")
+					    ("subtitle"                    . "booksubtitle")
+					    ("titleaddon"                  . "booktitleaddon")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none)))
 
-					  ("proceedings"
-					   "inproceedings"
-					   (("title" . "booktitle")
-					    ("subtitle" . "booksubtitle")
-					    ("titleaddon" . "booktitleaddon")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none)))
+                                          ;; Source                        Target
+					  ("proceedings"                   "inproceedings"
+					   (("title"                       . "booktitle")
+					    ("subtitle"                    . "booksubtitle")
+					    ("titleaddon"                  . "booktitleaddon")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none)))
 
-					  ("periodical"
-					   "article, suppperiodical"
-					   (("title" . "journaltitle")
-					    ("subtitle" . "journalsubtitle")
-					    ("shorttitle" . none)
-					    ("sorttitle" . none)
-					    ("indextitle" . none)
-					    ("indexsorttitle" . none))))
+                                          ;; Source                        Target
+					  ("periodical"                    "article, suppperiodical"
+					   (("title"                       . "journaltitle")
+					    ("subtitle"                    . "journalsubtitle")
+					    ("shorttitle"                  . :none)
+					    ("sorttitle"                   . :none)
+					    ("indextitle"                  . :none)
+					    ("indexsorttitle"              . :none))))
+
   "Inheritance scheme for BibLaTeX cross-referencing.
 Inheritances are specified for pairs of source and target entry
 type, where the target is the cross-referencing entry and the
@@ -164,7 +165,7 @@ comma-separated list of entry types.
 If no inheritance rule is set up for a given entry type+field
 combination, the field inherits from the same-name field in the
 cross-referenced entry.  If no inheritance should take place, the
-target field is set to the symbol `none'.")
+target field is set to the symbol `:none'.")
 
 ;; Regexes describing BibTeX identifiers and keys.  Note that while $ ^ & are
 ;; valid in BibTeX keys, they may nonetheless be problematic, because they are
@@ -329,7 +330,7 @@ such an inheritance schema."
 Inheritance is determined by INHERITANCES, which is an alist of
 source/target pairs.  If no inheritance should take place for
 SOURCE-FIELD, the target in the relevant item in INHERITANCES is
-the symbol `none'.  If there is no item for SOURCE-FIELD in
+the symbol `:none'.  If there is no item for SOURCE-FIELD in
 INHERITANCES, SOURCE-FIELD is returned.  Note that it is valid
 for INHERITANCES to be nil."
   ;; Note: the argument INHERITANCES differs from the INHERITANCE argument in
@@ -339,7 +340,7 @@ for INHERITANCES to be nil."
     (cond
      ((null target-field)
       source-field)
-     ((eq target-field 'none)
+     ((eq target-field :none)
       nil)
      (t target-field))))
 
