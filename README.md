@@ -18,13 +18,13 @@ Therefore, the second option is for `parsebib` to return the field values in suc
 
 Although both are bibliography file formats, there are obviously differences between BibTeX / `biblatex` on the one hand and CSL-JSON on the other. The entry types and field names are different, and CSL-JSON does not have something similar to `@String` abbreviations or cross-references.
 
-Especially relevant for the purpose of this library is that there are differences in the format of the data returned for the two types of files. First, in BibTeX data, the entry type and entry key are stored in the alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. While some of the core information on an entry is available in fields with the same name in both format (esp. author, editor and title), most fields are named differently (i.e.., the `year` field in BibTeX corresponds to the `issued` field in CSL-JSON).
-
-The bibliographic data is returned as a hash table. In this hash table, each entry is stored under its entry key (which is the `id` field in CSL-JSON) as an alist of `(<field> . <value>)` pairs. In BibTeX data, `<field>` is a string and field names are case-insensitive, so you may have `"Author"` or `"author"`, and both may occur in a single `.bib` file. Furthermore, `<value>` is always a string.
+Especially relevant for the purpose of this library is that there are differences in the format of the data returned for the two types of files. The bibliographic data is returned as a hash table. In this hash table, each entry is stored under its entry key (which is the `id` field in CSL-JSON) as an alist of `(<field> . <value>)` pairs. In BibTeX data, `<field>` is a string and field names are case-insensitive, so you may have `"Author"` or `"author"`, and both may occur in a single `.bib` file. Furthermore, `<value>` is always a string.
 
 In CSL-JSON data, the format of the alist is slightly different: `<field>` is not a string but a symbol and the symbol name is case-sensitive. The CSL-JSON standard describes which field names are lower case (most are) and which are upper case (`ISBN`, `DOI`, etc.) Furthermore, the `<value>` part of the alist items may be a string, a number or a vector, though when parsing a `.json` file, you can have `parsebib` convert all values to strings.
 
 You can access the data in an entry's alist with `assoc` or `alist-get`, but in order to accommodate for the difference in the type of the field names, you may want to write a custom `test` function to pass to them, so that you can generalise over the field name type.
+
+Another thing to note is that in BibTeX data, the type and key of an entry are stored in the entry's alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. While some of the core information on an entry is available in fields with the same name in both format (esp. author, editor and title), most fields are named differently (i.e.., the `year` field in BibTeX corresponds to the `issued` field in CSL-JSON).
 
 One last difference to note is that the general buffer-parsing functions, `parsebib-parse-bib-buffer` and `parsebib-parse-json-buffer` do not have the same return value. See the function descriptions below for details.
 
