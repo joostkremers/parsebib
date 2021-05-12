@@ -947,6 +947,79 @@ year, a month and a day."
   (parsebib--process-template "{year}{-month}{-day}"
                               (seq-mapn #'cons '(year month day) date-parts)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Format-independent API ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(cl-defun parsebib-parse (files &key entries strings display fields)
+  "Parse one or more bibliography files.
+FILES is the list of files to parse.  All bibliographic entries
+in FILES are collected and returned in a single hash table.
+FILES can be a list of `.bib' or `.json' files, or a combination
+of these.  FILES can also be a string, which should be the path
+to a single bibliography file.
+
+ENTRIES, if provided, should be a hash table with test function
+`equal', it is used to store the entries.  Any existing entries
+with identical keys are overwritten.  If provided, ENTRIES is
+also the return value.  If ENTRIES is nil, a new hash table is
+created and returned.
+
+STRINGS, similarly a hash table with test function `equal', is
+used to store the @String definitions.  Although STRINGS is not
+returned, it is modified in place and can therefore be used to
+collect the @String definitions in the files being parsed.
+
+If DISPLAY is non-nil, field values are returned in a way that is
+suitable for display: in `.bib' files, @String abbreviations are
+expanded, in `.json' files, values that are not strings are
+converted to strings.  Furthermore, sequences of white space
+characters (including newlines) are reduced to a single space.
+
+Specifically, setting DISPLAY means setting the arguments
+EXPAND-STRINGS and INHERITANCES in the function
+`parsebib-parse-bib-buffer' and setting STRINGIFY and YEAR-ONLY
+in the function `parsebib-parse-json-buffer'.  DISPLAY is simply
+passed on to these arguments, which means that it can be set to
+anything that INHERITANCES in `parsebib-parse-bib-buffer'
+accepts.  (The other arguments only distinguish between nil and
+non-nil.)
+
+FIELDS is a list of the field names to be read and included in
+the result.  Fields not in the list are ignored.  Note that field
+names should be strings; when parsing a `.json' file, they are
+converted to symbols.  See the doc strings of
+`parsebib-parse-bib-buffer' and `parsebib-parse-json-buffer' for
+details.  If FIELDS is nil, all fields are returned."
+  (or (and (hash-table-p entries)
+           (eq (hash-table-test entries) 'equal))
+      (setq entries (make-hash-table :test #'equal)))
+  (or (and (hash-table-p strings)
+           (eq (hash-table-test strings) 'equal))
+      (setq strings (make-hash-table :test #'equal)))
+  (when (stringp files)
+    (setq files (list files)))
+  (mapc (lambda (file)
+          (with-temp-buffer
+            (insert-file-contents file)
+            (cond
+             ((string= (file-name-extension file t) ".bib")
+              (parsebib-parse-bib-buffer :entries entries
+                                         :strings strings
+                                         :expand-strings display
+                                         :inheritances display
+                                         :fields fields))
+             ((string= (file-name-extension file t) ".json")
+              (parsebib-parse-json-buffer :entries entries
+                                          :stringify display
+                                          :year-only display
+                                          :fields fields))
+             (t (error "Not a bibliography file: %s" file)))))
+        files)
+  entries)
+
+
+
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
