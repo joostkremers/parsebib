@@ -40,18 +40,18 @@ In order to return entries in a way that is suitable for display, `parsebib` can
 
 Resolving cross-references means that if an entry that has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
 
-Expanding `@Strings` and resolving cross-references can also be done across files, if the result of parsing one file are passed when resolving the next file. Details are discussed below.
+Expanding `@Strings` and resolving cross-references can also be done across files, if the result of parsing one file are passed as arguments when parsing the next file. Details are discussed below.
 
 Note that if you wish to resolve cross-references, it is usually also necessary to expand `@String` abbreviations, because the `crossref` field may contain such an abbreviation. Resolving such a cross-reference will not work unless the abbreviation is expanded.
 
-Another option that may be useful when parsing a `.bib` file in order to display the items to the user is the ability to select which fields are returned. The higher-level API functions therefore can take a list of fields to be read and included in the results. Fields not in this list are ignored, except for the `=key=` and `=type=` fields, which are always included.
+When parsing a bibliography file for display, one may not be interested in all the data of each entry. The higher-level API functions can therefore take a list of fields to be read and included in the results. Fields not in this list are ignored, except for the `=key=` and `=type=` fields, which are always included.
 
 If you use this option and also want to resolve cross-references, you need to include the `crossref` field in the list of requested fields. Without it, `parsebib` is not able to determine which entries cross-reference another entry and no cross-references will be resolved. Also note that cross-referencing may add fields to an entry that are not on the list of requested fields. For example, in `biblatex`, the `booktitle` field of an `InBook` entry is linked to the `title` field of the cross-referenced `Book` entry. In such a case, if `title` is on the list  of requested fields, the `booktitle` field is added to the cross-referencing entry, even if `booktitle` is not on the list of requested fields.
 
 
 ### Higher-level API ###
 
-The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point. Note that the arguments in these functions (except `parsebib-expand-xrefs`) are keyword arguments.
+The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point. Note that the arguments in these functions (except in `parsebib-expand-xrefs`) are keyword arguments.
 
 
 #### `parsebib-collect-bib-entries (&key entries strings inheritance fields)` ####
@@ -62,9 +62,9 @@ The argument `entries` can be used to pass a (possibly non-empty) hash table in 
 
 If the argument `strings` is present, `@string` abbreviations are expanded. `strings` should be a hash table of `@string` definitions as returned by `parsebib-collect-strings`.
 
-If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer above the entry for which the cross-references are resolved and against the entries in the hash table `entries`.
+If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer *above* the current entry, and also against the entries in the hash table `entries`.
 
-The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be strings; comparison is case-insensitive.
+The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive.
 
 
 #### `parsebib-collect-strings (&key strings expand-strings)` ####
@@ -99,7 +99,7 @@ The `<entries>` and `<strings>` are hash tables, `<preambles>` and `<comments>` 
 
 If the arguments `entries` and `strings` are present, they should be hash tables with `equal` as the `:test` function. They are then used to store the entries and strings, respectively.
 
-The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and `inheritance` functions as the same-name argument in `parsebib-collect-bib-entries`, `fields` functions as the same-name argument in `paresbib-collect-bib-entries`.
+The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and the arguments `inheritance` and `fields` function as the same-name arguments in `parsebib-collect-bib-entries`.
 
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 
@@ -130,7 +130,7 @@ Find the first BibTeX item following `pos`, where an item is either a BibTeX ent
 
 These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` definitions or in field values are expanded. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
 
-`parsebib-read-entry` also takes an optional argument `keep-fields`. This is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be strings; comparison is case-insensitive.
+`parsebib-read-entry` also takes an optional argument `keep-fields`. This is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive.
 
 The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. One of these pairs contains the entry type `=type=`, and one contains the entry key. These have the keys `"=key="` and `"=type="`, respectively.
 
@@ -159,13 +159,11 @@ The argument `entries` can be used to pass a (possibly non-empty) hash table in 
 
 Some field values in CSL-JSON are not strings. These are primarily name and date fields, which in CSL-JSON are represented as JSON objects. The argument `stringify` determines how they are returned. When `stringify` is set to `nil`, they are returned as alists; with `stringify` set to `t`, they are converted to strings.
 
-The argument `stringify` is therefore similar to `expand-strings` and `inheritance` in `parsebib-parse-bib-buffer`, in that they return the bibliographic data in a form that is suitable for display but which does not represent the contents of the underlying `.json` file accurately.
-
-The argument `year-only` controls the way dates are converted to strings. If it non-`nil`, only the year part is returned. See below for details.
+The argument `year-only` controls the way dates are converted to strings. If it non-`nil`, only the year part is returned. This argument only takes effect if `stringify` is set to `t`. See below for details.
 
 The way values are converted to strings can be customised to some extent by the use of certain special variables, discussed below.
 
-The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be symbols; comparison is case-sensitive.
+The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except `type` and `id`, which are always included). Note that the field names should be symbols; comparison is case-sensitive.
 
 Note that all arguments in this function are keyword arguments.
 
