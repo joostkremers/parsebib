@@ -13,7 +13,12 @@ The data in the bibliography file can be returned in two ways. The first option 
 
 Therefore, the second option is for `parsebib` to return the field values in such a way that they are suitable for display. For BibTeX / `biblatex` files, this means that `@String` abbreviations are expanded and cross-references are resolved. For CSL-JSON files, it means that field values that are not strings (notably name and date fields) are converted to strings in a sensible way.
 
-Note that even if the field values are returned as-is, this does not mean that the contents of the bibliography file can be restored without change. The order of the entries in the file and of the fields within an entry, and in BibTeX / `biblatex` files the position of `@Preamble` definitions and `@Comments` are not available to the calling code. While it is possible to create a file with the exact same bibliographic data as the original file, `parsebib` does not offer a way to recreate the original file byte-for-byte.
+## BibTeX / `biblatex` vs. CSL-JSON ##
+
+Note, however, that the data format is not identical. For one, the entry types and field names are different. Especially relevant is the fact that in BibTeX data, the entry type and entry key are stored in the alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. Furthermore, it is important to keep in mind that in BibTeX data, the field names in an alist representing an entry are strings, while in CSL-JSON data, they are symbols.
+
+As a last point, the field values of an entry in BibTeX are always returned as strings, whereas the values in CSL-JSON data may be strings, numbers, or alists. The caller can request that all values be converted to strings, however.
+
 
 
 ## BibTeX / `biblatex` ##
@@ -25,11 +30,15 @@ Support for `.bib` files comes in two different APIs, a higher-level one that re
 
 In order to return entries in a way that is suitable for display, `parsebib` can expand `@string` abbreviations and resolve cross-references while reading the contents of a `.bib` file. When `@string` abbreviations are expanded, abbreviations in field values (or `@string` definitions) are replaced with their expansion. In addition, the braces or double quotes around field values are removed, and multiple spaces and newlines in sequence are reduced to a single space.
 
-Resolving cross-references means that if an entry that has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema. Note that resolving cross-references can be done independently from resolving `@string` abbrevs, but the former generally won't make sense without the latter.
-
-Resolving `@string` abbrevs can be done with both the higher-level and the lower-level API. Resolving cross-references can only be done with the higher-level API. This is mainly because cross-referenced entries appear *after* cross-referencing entries in the `.bib` file, so that when an entry with a `crossref` field is read, its cross-referenced entry is not known yet, while `@string` definitions appear in the `.bib` file before they are used. It is possible, however, to resolve cross-references after all entries have been read.
+Resolving cross-references means that if an entry that has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
 
 Expanding `@Strings` and resolving cross-references can also be done across files, if the result of parsing one file are passed when resolving the next file. Details are discussed below.
+
+Note that if you wish to resolve cross-references, it is usually also necessary to expand `@String` abbreviations, because the `crossref` field may contain such an abbreviation. Resolving such a cross-reference will not work unless the abbreviation is expanded.
+
+Another option that may be useful when parsing a `.bib` file in order to display the items to the user is the ability to select which fields are returned. The higher-level API functions therefore can take a list of fields to be read and included in the results. Fields not in this list are ignored, except for the `=key=` and `=type=` fields, which are always included.
+
+If you use this option and also want to resolve cross-references, you need to include the `crossref` field in the list of requested fields. Without it, `parsebib` is not able to determine which entries cross-reference another entry and no cross-references will be resolved. Also note that cross-referencing may add fields to an entry that are not on the list of requested fields. For example, in `biblatex`, the `booktitle` field of an `InBook` entry is linked to the `title` field of the cross-referenced `Book` entry. In such a case, if `title` is on the list  of requested fields, the `booktitle` field is added to the cross-referencing entry, even if `booktitle` is not on the list of requested fields.
 
 
 ### Higher-level API ###
@@ -45,7 +54,7 @@ The argument `entries` can be used to pass a (possibly non-empty) hash table in 
 
 If the argument `strings` is present, `@string` abbreviations are expanded. `strings` should be a hash table of `@string` definitions as returned by `parsebib-collect-strings`.
 
-If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer above the entry for which the cross-references are resolved and against the entries in `hash`.
+If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer above the entry for which the cross-references are resolved and against the entries in the hash table `entries`.
 
 The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be strings; comparison is case-insensitive.
 
@@ -91,6 +100,8 @@ Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It
 
 Expand cross-references in `entries` according to inheritance schema `inheritance`. `entries` should be a hash table as returned by `parsebib-collect-bib-entries`. Each entry with a `crossref` field is expanded as described above. The results are stored in the hash table `entries` again, the return value of this function is always `nil`.
 
+This function can be useful if you use the lower-level API to parse `.bib` files, because in that case, resolving cross-references cannot be done while reading entries.
+
 
 ### Lower-level API ###
 
@@ -120,15 +131,16 @@ Note that all `parsebib-read*` functions move point to the end of the entry.
 The reading functions return `nil` if they do not find the element they should be reading at the line point is on. Point is nonetheless moved, however. Similarly, `parsebib-read-entry` returns `nil` if it finds no next entry, leaving point at the end of the buffer. Additionally, it will signal an error of type `parsebib-entry-type-error` if it finds something that it deems to be an invalid item name. What is considered to be a valid name is determined by the regexp `parsebib-bibtex-identifier`, which is set to `"[^^\"@\\&$#%',={}() \t\n\f]*"`, meaning that any string not containing whitespace or any of the characters `^"@\&$#%',={}()` is considered a valid identifier.
 
 
-
-
 ## CSL-JSON ##
 
 The support for CSL-JSON files comprises just one function: `parsebib-parse-json-buffer`. The actual parsing of the JSON data is performed by Emacs itself, either by the native JSON parsing routines (starting with Emacs 27.1, if available), or the built-in Elisp library `json.el`. `Parsebib` makes sure that the data is returned in a format that is similar to what is returned for `.bib` files.
 
-Note, however, that the data format is not identical. For one, the entry types and field names are different. Especially relevant is the fact that in BibTeX data, the entry type and entry key are stored in the alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. Furthermore, it is important to keep in mind that in BibTeX data, the field names in an alist representing an entry are strings, while in CSL-JSON data, they are symbols.
 
-As a last point, the field values of an entry in BibTeX are always returned as strings, whereas the values in CSL-JSON data may be strings, numbers, or alists. The caller can request that all values be converted to strings, however.
+### Returning entries for display ###
+
+When returning entries in a form that is suitable for display, the most important issue in CSL-JSON files is the fact that certain fields do not have string values. For example, name fields (`author`, `editor`, etc.) and date fields (`issued`, `submitted` etc.) are JSON arrays. Parsebib can convert these to strings if requested.
+
+As with `.bib` files, it is possible to have `parsebib` only return specific fields when reading `.json` files. Here, too, the fields that identify an entry, i.e., `id` and `type`, are always included and do not need to be requested explicitly.
 
 
 #### `parsebib-parse-json-buffer (&key entries stringify year-only fields)` ####
@@ -146,6 +158,8 @@ The argument `year-only` controls the way dates are converted to strings. If it 
 The way values are converted to strings can be customised to some extent by the use of certain special variables, discussed below.
 
 The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored. Note that the field names should be symbols; comparison is case-sensitive.
+
+Note that all arguments in this function are keyword arguments.
 
 
 #### `parsebib-stringify-json (entry &optional year-only)`  ####
