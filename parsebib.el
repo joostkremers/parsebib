@@ -474,7 +474,7 @@ fields.
 
 FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
-except \"=key=\" and \"=type\", which are always included.  Case
+except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
@@ -512,7 +512,7 @@ to expand abbrevs in the field's value.
 
 FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
-except \"=key=\" and \"=type\", which are always included.  Case
+except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; Move to the first char of the field name.
@@ -604,7 +604,7 @@ local variable is found, the value of the variable
 
 FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
-except \"=key=\" and \"=type\", which are always included.  Case
+except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (or (and (hash-table-p entries)
@@ -676,7 +676,7 @@ local variable is found, the value of the variable
 
 FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
-except \"=key=\" and \"=type\", which are always included.  Case
+except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned."
   (save-excursion
