@@ -267,7 +267,7 @@ Otherwise, if the string is enclosed in braces {} or double
 quotes \"\", remove the delimiters.  In addition, newlines and
 multiple spaces in the string are replaced with a single space."
   (mapcar (lambda (str)
-            (setq str (replace-regexp-in-string "[ \t\n\f]+" " " str))
+            (setq str (replace-regexp-in-string "[ \t\n\f[:space:]]+" " " str))
             (cond
              ((gethash str abbrevs))
              ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
@@ -858,15 +858,15 @@ symbols."
   "Return the value of FIELD as a string.
 FIELD is a cons cell that constitutes a CSL-JSON field-value
 pair.  The car is the key, the cdr the value.  If the value is a
-string, return it unchanged.  Otherwise, convert it into a
-string.  SHORT is only relevant for date fields: if it is
-non-nil, return just a year, or the string \"XXXX\" if no year
-part is present."
+string, return it with sequences of white space reduced to a
+single space.  Otherwise, convert it into a string.  SHORT is
+only relevant for date fields: if it is non-nil, return just a
+year, or the string \"XXXX\" if no year part is present."
   (let ((key (car field))
         (value (cdr field)))
     (cond
      ((stringp value)
-      value)
+      (replace-regexp-in-string "[ \t\n\f[:space:]]+" " " value))
 
      ((numberp value)
       (format "%s" value))
