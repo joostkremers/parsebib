@@ -24,7 +24,7 @@ In CSL-JSON data, the format of the alist is slightly different: `<field>` is no
 
 You can access the data in an entry's alist with `assoc` or `alist-get`, but in order to accommodate for the differences, you may want to write a custom `test` function to pass to them, so that you can generalise over the field name type.
 
-Another thing to note is that in BibTeX data, the type and key of an entry are stored in the entry's alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. While some of the core information on an entry is available in fields with the same name in both format (esp. author, editor and title), most fields are named differently (i.e.., the `year` field in BibTeX corresponds to the `issued` field in CSL-JSON).
+Another thing to note is that in BibTeX data, the type and key of an entry are stored in the entry's alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. While some of the core information on an entry is available in fields with the same name in both formats (esp. author, editor and title), most fields are named differently (i.e.., the `year` field in BibTeX corresponds to the `issued` field in CSL-JSON).
 
 One last difference to note is that the general buffer-parsing functions, `parsebib-parse-bib-buffer` and `parsebib-parse-json-buffer` do not have the same type of return value. See the function descriptions below for details.
 
