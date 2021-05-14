@@ -950,7 +950,7 @@ year, a month and a day."
 ;; Format-independent API ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(cl-defun parsebib-parse (files &key entries strings display fields)
+(cl-defun parsebib-parse (files &key entries strings (display t) fields)
   "Parse one or more bibliography files.
 FILES is the list of files to parse.  All bibliographic entries
 in FILES are collected and returned in a single hash table.
@@ -982,7 +982,7 @@ in the function `parsebib-parse-json-buffer'.  DISPLAY is simply
 passed on to these arguments, which means that it can be set to
 anything that INHERITANCES in `parsebib-parse-bib-buffer'
 accepts.  (The other arguments only distinguish between nil and
-non-nil.)
+non-nil.) Note that DISPLAY defaults to t.
 
 FIELDS is a list of the field names to be read and included in
 the result.  Fields not in the list are ignored.  Note that field
