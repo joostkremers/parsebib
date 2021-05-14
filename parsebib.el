@@ -1018,8 +1018,6 @@ details.  If FIELDS is nil, all fields are returned."
         files)
   entries)
 
-
-
 (provide 'parsebib)
 
 ;;; parsebib.el ends here
