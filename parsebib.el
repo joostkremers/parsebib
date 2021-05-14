@@ -759,7 +759,7 @@ field, a `parsebib-entry-type-error' is raised."
       ;; the first non-whitespace character in the file must be an opening
       ;; bracket;
       (if (not (looking-at-p "[\n\t ]*\\["))
-          (error "Not a valid CSL-JSON file"))
+          (error "[Parsebib] Not a valid CSL-JSON file"))
       (let ((continue t))
         (while continue
           ;; We also know that the first non-whitespace character after that
@@ -1012,8 +1012,8 @@ details.  If FIELDS is nil, all fields are returned."
               (parsebib-parse-json-buffer :entries entries
                                           :stringify display
                                           :year-only display
-                                          :fields fields))
-             (t (error "Not a bibliography file: %s" file)))))
+                                          :fields (mapcar #'intern fields)))
+             (t (error "[Parsebib] Not a bibliography file: %s" file)))))
         files)
   entries)
 
