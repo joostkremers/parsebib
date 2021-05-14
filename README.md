@@ -28,6 +28,8 @@ Another thing to note is that in BibTeX data, the type and key of an entry are s
 
 One last difference to note is that the general buffer-parsing functions, `parsebib-parse-bib-buffer` and `parsebib-parse-json-buffer` do not have the same type of return value. See the function descriptions below for details.
 
+There is also a function `parsebib-parse` that takes a list of files and returns the entries in them. It has a slightly simplified interface, but it is format-agnostic: it handles both `.bib` and `.json` files.
+
 
 ## BibTeX / `biblatex` ##
 
@@ -214,4 +216,20 @@ If more than one name appears in a name field, they are separated by the value o
 
 #### `parsebib-json-field-separator` ####
 
-Field values that are arrays are converted to a string using the value of this variable as a separator. Currently (CSL-JSON v1.0), this only applies to the `caterogies` field, which is an array of strings. The default value of this variable is `", "` (note the space). It can be `let`-bound like the variables above.
+Field values that are arrays are converted to a string using the value of this variable as a separator. Currently (CSL-JSON v1.0), this only applies to the `categories` field, which is an array of strings. The default value of this variable is `", "` (note the space). It can be `let`-bound like the variables above.
+
+
+## General API ##
+
+### `parsebib-parse (files &key entries strings (display t) fields)` ###
+
+Parse a bibliography file or list of files and return the entries in them. This function can be used for both `.bib` and for `.json` files, and also for a combination thereof. It returns all entries in all files in a single hash table.
+
+This is a high-level function meant for retrieving bibliographic entries in such a way that they can be shown to a user. It is not possible to retrieve the `@Preamble` or `@Comment`s in a `.bib` file using this function. Use `parsebib-parse-bib-buffer` or one of the other functions for that.
+
+`parsebib-parse` basically just calls `parsebib-parse-bib-buffer` or `parsebib-parse-json-buffer` as appropriate and passes its arguments on to those functions. The argument `entries` is passed to both, as is `fields`. The field names in `fields` need to be strings, regardless of the file format, though. `parsebib-parse` converts the strings to symbols when it parses a `.json` file. The `strings` argument is only passed to `parsebib-parse-bib-buffer`, since there are obviously no `@String`s in a `.json` file.
+
+The `display` argument controls the way in which the entry data is returned. By default, it returns the data in a way that is suitable for display. For `.bib` files, this means that `@String` abbreviations are expanded and cross-references are resolved. For `.json` files, it means that fields are returned as strings and that month and day parts in date fields are ignored.
+
+See the doc strings of `parsebib-parse`, `parsebib-parse-bib-buffer` and `parsebib-parse-json-buffer` for details on the meaning of `display`.
+
