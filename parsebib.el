@@ -520,11 +520,10 @@ FIELDS is nil, all fields are returned."
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let ((field-type (buffer-substring-no-properties beg (point))))
-            (if (member-ignore-case field-type fields)
-                (let ((field-contents (parsebib--parse-bib-value limit strings)))
-                  (cons field-type field-contents))
-              ;; Skip over the field value.
-              (parsebib--parse-bib-value limit)
+            (if (or (not fields)
+                    (member-ignore-case field-type fields))
+                (cons field-type (parsebib--parse-bib-value limit strings))
+              (parsebib--parse-bib-value limit) ; Skip over the field value.
               :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
