@@ -1007,7 +1007,7 @@ details.  If FIELDS is nil, all fields are returned."
               (parsebib-parse-bib-buffer :entries entries
                                          :strings strings
                                          :expand-strings display
-                                         :inheritances display
+                                         :inheritance display
                                          :fields fields))
              ((string= (file-name-extension file t) ".json")
               (parsebib-parse-json-buffer :entries entries
