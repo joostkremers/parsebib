@@ -311,12 +311,17 @@ such an inheritance schema."
   (when (and target-entry source-entry)
     (when (eq inheritance 'biblatex)
       (setq inheritance parsebib--biblatex-inheritances))
-    (let* ((inheritable-fields (unless (eq inheritance 'BibTeX)
-                                 (append (cl-third (cl-find-if (lambda (elem)
-                                                                 (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b") (cl-first elem))
-                                                                      (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b") (cl-second elem))))
-                                                               inheritance))
-                                         (cl-third (assoc-string "all" inheritance)))))
+    (let* ((inheritable-fields
+            (unless (eq inheritance 'BibTeX)
+              (append
+               (mapcan #'cl-third (cl-remove-if-not
+                                   (lambda (elem)
+                                     (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
+                                                          (cl-first elem))
+					  (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
+                                                          (cl-second elem))))
+                                   inheritance))
+               (cl-third (assoc-string "all" inheritance)))))
            (new-fields (delq nil (mapcar (lambda (field)
                                            (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
                                              (if (and target-field
