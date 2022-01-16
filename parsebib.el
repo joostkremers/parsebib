@@ -314,13 +314,14 @@ such an inheritance schema."
     (let* ((inheritable-fields
             (unless (eq inheritance 'BibTeX)
               (append
-               (mapcan #'cl-third (cl-remove-if-not
-                                   (lambda (elem)
-                                     (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
-                                                          (cl-first elem))
-					  (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
-                                                          (cl-second elem))))
-                                   inheritance))
+               (apply #'append (mapcar #'cl-third
+				       (cl-remove-if-not
+					(lambda (elem)
+					  (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
+							       (cl-first elem))
+					       (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
+							       (cl-second elem))))
+					inheritance)))
                (cl-third (assoc-string "all" inheritance)))))
            (new-fields (delq nil (mapcar (lambda (field)
                                            (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
