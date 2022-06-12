@@ -53,6 +53,20 @@
 ;; BibTeX / biblatex parser ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar parsebib-TeX-markup-replace-alist '(("{" . "")
+                                               ("}" . "")
+                                               ("``" . "“")
+					       ("`" . "‘")
+					       ("''" . "”")
+					       ("'" . "’"))
+  "Alist of strings and replacements for TeX markup.
+This is used in `parsebib-clean-TeX-markup' to make TeX markup more
+suitable for display.  Each item in the list consists of a string
+and its replacement.  Both must be strings.  Earlier elements are
+evaluated before later ones, so if one string is a subpattern of
+another, the second must appear later (e.g. \"''\" is before
+\"'\".")
+
 (defvar parsebib-hashid-fields nil
   "List of fields used to create a hash id for each entry.
 Hash ids can only be created for BibTeX/biblatex files.  The hash
@@ -254,6 +268,27 @@ double quotes around field values are removed."
     (if strings
         (string-join (parsebib--expand-strings (nreverse res) strings))
       (string-join (nreverse res) " # "))))
+
+(defun parsebib-clean-TeX-markup (string)
+  "Return STRING without TeX markup."
+  (save-match-data
+    (let ((case-fold-search t))
+      ;; First replace TeX commands with their arguments and do some
+      ;; transformations, i.e., \textsc{cls} ==> CLS.  Note that optional
+      ;; arguments are also removed.
+      (while (string-match "\\\\\\([a-zA-Z*]*\\)\\(?:\\[.*?\\]\\)*{\\(.*?\\)}" string)
+        (let ((arg (copy-sequence (match-string 2 string))))
+          (pcase (match-string 1 string)
+            ((or "emph" "textit") (setq arg (propertize arg 'face '(italic))))
+            ("textbf" (setq arg (propertize arg 'face '(bold))))
+            ("textsc" (setq arg (upcase arg))))
+          (setq string (replace-match arg t t string)))))
+    ;; Replace as defined in `ebib-TeX-markup-replace-alist', and
+    ;; remove all {braces} (this takes care of nested braces too)
+    (replace-regexp-in-string
+     (rx-to-string (append '(or) (mapcar #'car parsebib-TeX-markup-replace-alist)))
+     (lambda (match) (cdr (assoc match parsebib-TeX-markup-replace-alist 'string=)))
+     string)))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Expanding stuff ;;
