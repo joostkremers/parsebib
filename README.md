@@ -91,7 +91,7 @@ Collect all `@comments` in the current buffer and return them as a list.
 Find and return the BibTeX dialect for the current buffer. The BibTeX dialect is either `BibTeX` or `biblatex` and can be defined in a local-variable block at the end of the file.
 
 
-#### `parsebib-parse-bib-buffer (&keys entries strings expand-strings inheritance fields)` ####
+#### `parsebib-parse-bib-buffer (&keys entries strings expand-strings inheritance fields replace-TeX)` ####
 
 Collect all BibTeX data in the current buffer. Return a five-element list:
 
@@ -102,6 +102,8 @@ The `<entries>` and `<strings>` are hash tables, `<preambles>` and `<comments>` 
 If the arguments `entries` and `strings` are present, they should be hash tables with `equal` as the `:test` function. They are then used to store the entries and strings, respectively.
 
 The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and the arguments `inheritance` and `fields` function as the same-name arguments in `parsebib-collect-bib-entries`.
+
+If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. (Note: its definition in `parsebib.el` is more informative than its actual value; see also the relevant tests in `parsebib-test.el` for examples of its use.)
 
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 
@@ -125,14 +127,14 @@ All functions here take an optional position argument, which is the position in 
 Find the first BibTeX item following `pos`, where an item is either a BibTeX entry, or a `@Preamble`, `@String`, or `@Comment`. This function returns the item's type as a string, i.e., either `"preamble"`, `"string"`, or `"comment"`, or the entry type. Note that the `@` is *not* part of the returned string. This function moves point into the correct position to start reading the actual contents of the item, which is done by one of the following functions.
 
 
-#### `parsebib-read-entry (type &optional pos strings keep-fields)` ####
+#### `parsebib-read-entry (type &optional pos strings keep-fields replace-TeX)` ####
 #### `parsebib-read-string (&optional pos strings)` ####
 #### `parsebib-read-preamble (&optional pos)` ####
 #### `parsebib-read-comment (&optional pos)` ####
 
 These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` definitions or in field values are expanded. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
 
-`parsebib-read-entry` also takes an optional argument `keep-fields`. This is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive.
+`parsebib-read-entry` takes two more optional arguments: `keep-fields` and `replace-TeX`. `keep-fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive. `replace-TeX` is a flag indicating whether TeX markup in field values should be replaced with something that's more suitable for display.
 
 The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. One of these pairs contains the entry type `=type=`, and one contains the entry key. These have the keys `"=key="` and `"=type="`, respectively.
 
@@ -229,7 +231,7 @@ This is a high-level function meant for retrieving bibliographic entries in such
 
 `parsebib-parse` basically just calls `parsebib-parse-bib-buffer` or `parsebib-parse-json-buffer` as appropriate and passes its arguments on to those functions. The argument `entries` is passed to both, as is `fields`. The field names in `fields` need to be strings, regardless of the file format, though. `parsebib-parse` converts the strings to symbols when it parses a `.json` file. The `strings` argument is only passed to `parsebib-parse-bib-buffer`, since there are obviously no `@String`s in a `.json` file.
 
-The `display` argument controls the way in which the entry data is returned. By default, it returns the data in a way that is suitable for display. For `.bib` files, this means that `@String` abbreviations are expanded and cross-references are resolved. For `.json` files, it means that fields are returned as strings and that month and day parts in date fields are ignored.
+The `display` argument controls the way in which the entry data is returned. By default, it returns the data in a way that is suitable for display. For `.bib` files, this means that `@String` abbreviations are expanded, cross-references are resolved and TeX markup in field values is removed or replaced with Unicode characters. For `.json` files, it means that fields are returned as strings and that month and day parts in date fields are ignored.
 
 See the doc strings of `parsebib-parse`, `parsebib-parse-bib-buffer` and `parsebib-parse-json-buffer` for details on the meaning of `display`.
 
