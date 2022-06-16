@@ -47,6 +47,8 @@
                     (require 'json)
                     (defvar json-object-type)))
 
+(declare-function json-read "json.el")
+
 (define-error 'parsebib-entry-type-error "[Parsebib] Illegal entry type at point" 'error)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
