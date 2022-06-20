@@ -240,7 +240,7 @@ trailing space will be included in the overall match."
 
 (defun parsebib--convert-tex-italics (str)
   "Return first sub-expression match in STR, in italics."
-  (propertize (match-string 1 str) 'face 'italic))
+  (propertize (parsebib-clean-TeX-markup (match-string 1 str)) 'face 'italic))
 
 (defun parsebib--convert-tex-bold (str)
   "Return first sub-expression match in STR, in bold."
@@ -263,7 +263,7 @@ trailing space will be included in the overall match."
          ("textperthousand"               "\N{PER MILLE SIGN}")
          ("textquestiondown"              "\N{INVERTED QUESTION MARK}")
          ("P"                             "\N{PILCROW SIGN}")
-         (("$" "textdollar")              "$")
+         ("textdollar"                    "$")
          ("S"                             "\N{SECTION SIGN}")
          (("ldots" "dots" "textellipsis") "\N{HORIZONTAL ELLIPSIS}")))
 
@@ -293,7 +293,7 @@ trailing space will be included in the overall match."
          ("r"  "\N{COMBINING RING ABOVE}")))
 
     ;; LaTeX2 Escapable "Special" Characters
-    ("\\\\%" . "%") ("\\\\&" . "&") ("\\\\#" . "#")
+    ("\\\\%" . "%") ("\\\\&" . "&") ("\\\\#" . "#") ("\\\\\\$" . "$")
 
     ;; Quotes
     ("``" . "\N{LEFT DOUBLE QUOTATION MARK}")
