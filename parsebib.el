@@ -368,7 +368,8 @@ with `replace-regexp-in-string', which see for details."
     (save-match-data
       (cl-loop for (pattern . replacement) in parsebib-TeX-markup-replace-alist
                do (setq string (replace-regexp-in-string
-                                pattern replacement string))
+                                pattern replacement string
+                                nil (functionp replacement)))
                finally return string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
