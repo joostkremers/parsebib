@@ -301,6 +301,12 @@ trailing space will be included in the overall match."
     ("''" . "\N{RIGHT DOUBLE QUOTATION MARK}")
     ("'"  . "\N{RIGHT SINGLE QUOTATION MARK}")
 
+    ;; Formatting Commands
+    ("\\\\textit{\\(.*?\\)}" . parsebib--convert-tex-italics)
+    ("\\\\emph{\\(.*?\\)}"   . parsebib--convert-tex-italics)
+    ("\\\\textbf{\\(.*?\\)}" . parsebib--convert-tex-bold)
+    ("\\\\textsc{\\(.*?\\)}" . parsebib--convert-tex-small-caps)
+
     ;; Non-ASCII Letters (Excluding Accented Letters)
     ,@(mapcar
        (apply-partially 'apply 'parsebib--build-TeX-command-regexp)
@@ -335,12 +341,6 @@ trailing space will be included in the overall match."
 
     ;; Commands without arguments, optionally terminated by empty braces
     ("\\(\\\\[a-zA-Z*]+\\)\\(?:\\[.*\\]\\)?\\(?:{}\\)?" . "\\1")
-
-    ;; Formatting Commands
-    ("\\\\textit{\\(.*?\\)}" . parsebib--convert-tex-italics)
-    ("\\\\emph{\\(.*?\\)}"   . parsebib--convert-tex-italics)
-    ("\\\\textbf{\\(.*?\\)}" . parsebib--convert-tex-bold)
-    ("\\\\textsc{\\(.*?\\)}" . parsebib--convert-tex-small-caps)
 
     ;; Collapse white space
     ("[[:blank:]]+" . " ")
