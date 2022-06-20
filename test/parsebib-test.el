@@ -244,6 +244,12 @@
            (parsebib-clean-TeX-markup "The verb \\textsc{krijgen} as an undative verb.")
            "The verb KRIJGEN as an undative verb.")))
 
+(ert-deftest parsebib-clean-TeX-markup-nested-macros ()
+  (should (equal (parsebib-clean-TeX-markup "\\textit{\\foo{bar}}")
+                 #("bar" 0 3 (face italic))))
+  (should (equal (parsebib-clean-TeX-markup "\\textit{\\foo}}")
+                 #("\\foo" 0 4 (face italic)))))
+
 (ert-deftest parsebib-clean-TeX-markup-nonascii-letters-with-braces ()
   ;; The braces should be removed and the space after it retained.
   (should (equal (parsebib-clean-TeX-markup "\\AA{} and") "\N{LATIN CAPITAL LETTER A WITH RING ABOVE} and"))
