@@ -1,7 +1,7 @@
 # Parsebib #
 
 
-(c) 2014-2021 Joost Kremers
+(c) 2014-2022 Joost Kremers
 
 `Parsebib` is an Elisp library for reading bibliographic database files. It supports both BibTeX / `biblatex` (`.bib`)  files and CSL-JSON (`.json`) files.
 
