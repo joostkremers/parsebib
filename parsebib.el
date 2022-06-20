@@ -62,96 +62,96 @@ id is stored in the entry in the special field `=hashid='.")
 
 (defvar parsebib--biblatex-inheritances '(;; Source                        Target
                                           ("all"                           "all"
-					   (("ids"                         . none)
-					    ("crossref"                    . none)
-					    ("xref"                        . none)
-					    ("entryset"                    . none)
-					    ("entrysubtype"                . none)
-					    ("execute"                     . none)
-					    ("label"                       . none)
-					    ("options"                     . none)
-					    ("presort"                     . none)
-					    ("related"                     . none)
-					    ("relatedoptions"              . none)
-					    ("relatedstring"               . none)
-					    ("relatedtype"                 . none)
-					    ("shorthand"                   . none)
-					    ("shorthandintro"              . none)
-					    ("sortkey"                     . none)))
+                                           (("ids"                         . none)
+                                            ("crossref"                    . none)
+                                            ("xref"                        . none)
+                                            ("entryset"                    . none)
+                                            ("entrysubtype"                . none)
+                                            ("execute"                     . none)
+                                            ("label"                       . none)
+                                            ("options"                     . none)
+                                            ("presort"                     . none)
+                                            ("related"                     . none)
+                                            ("relatedoptions"              . none)
+                                            ("relatedstring"               . none)
+                                            ("relatedtype"                 . none)
+                                            ("shorthand"                   . none)
+                                            ("shorthandintro"              . none)
+                                            ("sortkey"                     . none)))
 
                                           ;; Source                        Target
-					  ("mvbook, book"                  "inbook, bookinbook, suppbook"
-					   (("author"                      . "author")
-					    ("author"                      . "bookauthor")))
+                                          ("mvbook, book"                  "inbook, bookinbook, suppbook"
+                                           (("author"                      . "author")
+                                            ("author"                      . "bookauthor")))
 
                                           ;; Source                        Target
-					  ("mvbook"                        "book, inbook, bookinbook, suppbook"
-					   (("title"                       . "maintitle")
-					    ("subtitle"                    . "mainsubtitle")
-					    ("titleaddon"                  . "maintitleaddon")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none)))
+                                          ("mvbook"                        "book, inbook, bookinbook, suppbook"
+                                           (("title"                       . "maintitle")
+                                            ("subtitle"                    . "mainsubtitle")
+                                            ("titleaddon"                  . "maintitleaddon")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none)))
 
                                           ;; Source                        Target
-					  ("mvcollection, mvreference"     "collection, reference, incollection, inreference, suppcollection"
-					   (("title"                       . "maintitle")
-					    ("subtitle"                    . "mainsubtitle")
-					    ("titleaddon"                  . "maintitleaddon")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none)))
+                                          ("mvcollection, mvreference"     "collection, reference, incollection, inreference, suppcollection"
+                                           (("title"                       . "maintitle")
+                                            ("subtitle"                    . "mainsubtitle")
+                                            ("titleaddon"                  . "maintitleaddon")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none)))
 
                                           ;; Source                        Target
-					  ("mvproceedings"                 "proceedings, inproceedings"
-					   (("title"                       . "maintitle")
-					    ("subtitle"                    . "mainsubtitle")
-					    ("titleaddon"                  . "maintitleaddon")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none)))
+                                          ("mvproceedings"                 "proceedings, inproceedings"
+                                           (("title"                       . "maintitle")
+                                            ("subtitle"                    . "mainsubtitle")
+                                            ("titleaddon"                  . "maintitleaddon")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none)))
 
                                           ;; Source                        Target
-					  ("book"                          "inbook, bookinbook, suppbook"
-					   (("title"                       . "booktitle")
-					    ("subtitle"                    . "booksubtitle")
-					    ("titleaddon"                  . "booktitleaddon")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none)))
+                                          ("book"                          "inbook, bookinbook, suppbook"
+                                           (("title"                       . "booktitle")
+                                            ("subtitle"                    . "booksubtitle")
+                                            ("titleaddon"                  . "booktitleaddon")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none)))
 
                                           ;; Source                        Target
-					  ("collection, reference"         "incollection, inreference, suppcollection"
-					   (("title"                       . "booktitle")
-					    ("subtitle"                    . "booksubtitle")
-					    ("titleaddon"                  . "booktitleaddon")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none)))
+                                          ("collection, reference"         "incollection, inreference, suppcollection"
+                                           (("title"                       . "booktitle")
+                                            ("subtitle"                    . "booksubtitle")
+                                            ("titleaddon"                  . "booktitleaddon")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none)))
 
                                           ;; Source                        Target
-					  ("proceedings"                   "inproceedings"
-					   (("title"                       . "booktitle")
-					    ("subtitle"                    . "booksubtitle")
-					    ("titleaddon"                  . "booktitleaddon")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none)))
+                                          ("proceedings"                   "inproceedings"
+                                           (("title"                       . "booktitle")
+                                            ("subtitle"                    . "booksubtitle")
+                                            ("titleaddon"                  . "booktitleaddon")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none)))
 
                                           ;; Source                        Target
-					  ("periodical"                    "article, suppperiodical"
-					   (("title"                       . "journaltitle")
-					    ("subtitle"                    . "journalsubtitle")
-					    ("shorttitle"                  . none)
-					    ("sorttitle"                   . none)
-					    ("indextitle"                  . none)
-					    ("indexsorttitle"              . none))))
+                                          ("periodical"                    "article, suppperiodical"
+                                           (("title"                       . "journaltitle")
+                                            ("subtitle"                    . "journalsubtitle")
+                                            ("shorttitle"                  . none)
+                                            ("sorttitle"                   . none)
+                                            ("indextitle"                  . none)
+                                            ("indexsorttitle"              . none))))
 
   "Inheritance scheme for BibLaTeX cross-referencing.
 Inheritances are specified for pairs of source and target entry
@@ -206,9 +206,9 @@ all variants, the letter is captured with group number 1."
   (cons
    (rx-to-string
     `(: "\\" ,command
-	(or (: (* blank) "{" (group-n 1 letter) "}")
-	    (: (,(if (string-match "[a-zA-Z]" command) '+ '*) blank)
-	       (group-n 1 letter))))
+        (or (: (* blank) "{" (group-n 1 letter) "}")
+            (: (,(if (string-match "[a-zA-Z]" command) '+ '*) blank)
+               (group-n 1 letter))))
     t)
    (rx-to-string `(: (backref 1) ,accent) t)))
 
@@ -229,12 +229,12 @@ trailing space will be included in the overall match."
   (cons
    (rx-to-string
     `(: "\\" ,(if (listp command) `(or ,@command) command)
-	;; If a command is terminated by a space, LaTeX includes that
-	;; space in the command itself, so it is not printed (like the
-	;; behaviour for a following {}) Accordingly, if there is one,
-	;; include that space in the replaced string by matching on it
-	;; first.
-	(or (+ blank) word-end "{}"))
+        ;; If a command is terminated by a space, LaTeX includes that
+        ;; space in the command itself, so it is not printed (like the
+        ;; behaviour for a following {}) Accordingly, if there is one,
+        ;; include that space in the replaced string by matching on it
+        ;; first.
+        (or (+ blank) word-end "{}"))
     t)
    replacement))
 
@@ -259,12 +259,12 @@ trailing space will be included in the overall match."
        (apply-partially 'apply 'parsebib--build-TeX-command-regexp)
        '((("ddag" "textdaggerdbl")        "\N{DOUBLE DAGGER}")
          (("dag" "textdagger")            "\N{DAGGER}")
-	 ("textpertenthousand"            "\N{PER TEN THOUSAND SIGN}")
+         ("textpertenthousand"            "\N{PER TEN THOUSAND SIGN}")
          ("textperthousand"               "\N{PER MILLE SIGN}")
-	 ("textquestiondown"              "\N{INVERTED QUESTION MARK}")
+         ("textquestiondown"              "\N{INVERTED QUESTION MARK}")
          ("P"                             "\N{PILCROW SIGN}")
          (("$" "textdollar")              "$")
-	 ("S"                             "\N{SECTION SIGN}")
+         ("S"                             "\N{SECTION SIGN}")
          (("ldots" "dots" "textellipsis") "\N{HORIZONTAL ELLIPSIS}")))
 
     ;; Text-mode Accents
@@ -274,15 +274,15 @@ trailing space will be included in the overall match."
          ("'"  "\N{COMBINING ACUTE ACCENT}")
          ("."  "\N{COMBINING DOT ABOVE}")
          ("="  "\N{COMBINING MACRON}")
-	 ("^"  "\N{COMBINING CIRCUMFLEX ACCENT}")
+         ("^"  "\N{COMBINING CIRCUMFLEX ACCENT}")
          ("`"  "\N{COMBINING GRAVE ACCENT}")
-	 ("b"  "\N{COMBINING MACRON BELOW}")
+         ("b"  "\N{COMBINING MACRON BELOW}")
          ("c"  "\N{COMBINING CEDILLA}")
          ("d"  "\N{COMBINING DOT BELOW}")
          ("H"  "\N{COMBINING DOUBLE ACUTE ACCENT}")
          ("k"  "\N{COMBINING OGONEK}")
          ("U"  "\N{COMBINING DOUBLE VERTICAL LINE ABOVE}")
-	 ("u"  "\N{COMBINING BREVE}")
+         ("u"  "\N{COMBINING BREVE}")
          ("v"  "\N{COMBINING CARON}")
          ("~"  "\N{COMBINING TILDE}")
          ("|"  "\N{COMBINING COMMA ABOVE}")
@@ -315,7 +315,7 @@ trailing space will be included in the overall match."
          ("DH" "\N{LATIN CAPITAL LETTER ETH}")
          ("DJ" "\N{LATIN CAPITAL LETTER ETH}")
          ("L"  "\N{LATIN CAPITAL LETTER L WITH STROKE}")
-	 ("SS" "\N{LATIN CAPITAL LETTER SHARP S}")
+         ("SS" "\N{LATIN CAPITAL LETTER SHARP S}")
          ("NG" "\N{LATIN CAPITAL LETTER ENG}")
          ("OE" "\N{LATIN CAPITAL LIGATURE OE}")
          ("O"  "\N{LATIN CAPITAL LETTER O WITH STROKE}")
@@ -326,13 +326,13 @@ trailing space will be included in the overall match."
          ("dh" "\N{LATIN SMALL LETTER ETH}")
          ("dj" "\N{LATIN SMALL LETTER ETH}")
          ("l"  "\N{LATIN SMALL LETTER L WITH STROKE}")
-	 ("ss" "\N{LATIN SMALL LETTER SHARP S}")
+         ("ss" "\N{LATIN SMALL LETTER SHARP S}")
          ("ng" "\N{LATIN SMALL LETTER ENG}")
          ("oe" "\N{LATIN SMALL LIGATURE OE}")
          ("o"  "\N{LATIN SMALL LETTER O WITH STROKE}")
          ("th" "\N{LATIN SMALL LETTER THORN}")
 
-	 ("ij" "ij")
+         ("ij" "ij")
          ("i"  "\N{LATIN SMALL LETTER DOTLESS I}")
          ("j"  "\N{LATIN SMALL LETTER DOTLESS J}")))
 
@@ -367,9 +367,9 @@ with `replace-regexp-in-string', which see for details."
   (let ((case-fold-search nil))
     (save-match-data
       (cl-loop for (pattern . replacement) in parsebib-TeX-markup-replace-alist
-	       do (setq string (replace-regexp-in-string
-				pattern replacement string))
-	       finally return string))))
+               do (setq string (replace-regexp-in-string
+                                pattern replacement string))
+               finally return string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Matching and parsing stuff ;;
@@ -516,13 +516,13 @@ such an inheritance schema."
             (unless (eq inheritance 'BibTeX)
               (append
                (apply #'append (mapcar #'cl-third
-				       (cl-remove-if-not
-					(lambda (elem)
-					  (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
-							       (cl-first elem))
-					       (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
-							       (cl-second elem))))
-					inheritance)))
+                                       (cl-remove-if-not
+                                        (lambda (elem)
+                                          (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
+                                                               (cl-first elem))
+                                               (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
+                                                               (cl-second elem))))
+                                        inheritance)))
                (cl-third (assoc-string "all" inheritance)))))
            (new-fields (delq nil (mapcar (lambda (field)
                                            (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
