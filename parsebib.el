@@ -240,7 +240,7 @@ trailing space will be included in the overall match."
 
 (defun parsebib--convert-tex-italics (str)
   "Return first sub-expression match in STR, in italics."
-  (propertize (parsebib-clean-TeX-markup (match-string 1 str)) 'face 'italic))
+  (propertize (match-string 1 str) 'face 'italic))
 
 (defun parsebib--convert-tex-bold (str)
   "Return first sub-expression match in STR, in bold."
