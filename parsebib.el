@@ -357,6 +357,11 @@ string).  Earlier elements are evaluated before later ones, so if
 one string is a subpattern of another, the second must appear
 later (e.g. \"''\" is before \"'\").")
 
+(defvar parsebib-clean-TeX-markup-excluded-fields '("file"
+                                                    "url"
+                                                    "doi")
+  "List of fields that should not be passed to `parsebib-clean-TeX-markup'.")
+
 (defun parsebib-clean-TeX-markup (string)
   "Return STRING without TeX markup.
 Any substring matching the car of a cell in
@@ -735,10 +740,12 @@ ASCII/Unicode characters.  See the variable
   (unless (>= (point) limit)                      ; If we haven't reached the end of the entry.
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
-          (let ((field-type (buffer-substring-no-properties beg (point))))
+          (let* ((field (buffer-substring-no-properties beg (point)))
+                 (replace-TeX (and replace-TeX
+                                   (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields)))))
             (if (or (not fields)
-                    (member-ignore-case field-type fields))
-                (cons field-type (parsebib--parse-bib-value limit strings replace-TeX))
+                    (member-ignore-case field fields))
+                (cons field (parsebib--parse-bib-value limit strings replace-TeX))
               (parsebib--parse-bib-value limit) ; Skip over the field value.
               :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
 
