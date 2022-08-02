@@ -103,9 +103,14 @@ If the arguments `entries` and `strings` are present, they should be hash tables
 
 The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and the arguments `inheritance` and `fields` function as the same-name arguments in `parsebib-collect-bib-entries`.
 
-If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. (Note: its definition in `parsebib.el` is more informative than its actual value; see also the relevant tests in `parsebib-test.el` for examples of its use.)
+If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. (Note: its definition in `parsebib.el` is more informative than its actual value; see also the relevant tests in `parsebib-test.el` for examples of its use.) No clean-up is applied to fields listed in `parsebib-clean-TeX-markup-exclude-fields`.
 
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
+
+
+#### parsebib-clean-TeX-markup-exclude-fields ####
+
+This variable is set to a list of fields in which no clean-up of TeX markup should take place when parsing a buffer. To customise this list, you can `let`-bind it around a call to `parsebib-parse-bib-buffer`.
 
 
 #### `parsebib-expand-xrefs (entries inheritance)` ####
@@ -141,6 +146,11 @@ The reading functions return the contents of the item they read: `parsebib-read-
 Note that all `parsebib-read*` functions move point to the end of the entry.
 
 The reading functions return `nil` if they do not find the element they should be reading at the line point is on. Point is nonetheless moved, however. Similarly, `parsebib-read-entry` returns `nil` if it finds no next entry, leaving point at the end of the buffer. Additionally, it will signal an error of type `parsebib-entry-type-error` if it finds something that it deems to be an invalid item name. What is considered to be a valid name is determined by the regexp `parsebib-bibtex-identifier`, which is set to `"[^^\"@\\&$#%',={}() \t\n\f]*"`, meaning that any string not containing whitespace or any of the characters `^"@\&$#%',={}()` is considered a valid identifier.
+
+
+#### parsebib-clean-TeX-markup (string) ####
+
+Apply all replacements in `parsebib-TeX-markup-replace-alist` to `string`. Note that this function ignores `parsebib-clean-TeX-markup-exclude-fields`. (After all, it does not even know which field `string` comes from.)
 
 
 ## CSL-JSON ##
