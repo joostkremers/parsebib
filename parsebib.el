@@ -240,113 +240,114 @@ trailing space will be included in the overall match."
 
 (defun parsebib--convert-tex-italics (str)
   "Return first sub-expression match in STR, in italics."
-  (propertize (match-string 1 str) 'face 'italic))
+  (propertize str 'face 'italic))
 
 (defun parsebib--convert-tex-bold (str)
   "Return first sub-expression match in STR, in bold."
-  (propertize (match-string 1 str) 'face 'bold))
+  (propertize str 'face 'bold))
 
 (defun parsebib--convert-tex-small-caps (str)
   "Return first sub-expression match in STR, capitalised."
-  (upcase (match-string 1 str)))
+  (upcase str))
 
-(defvar parsebib-TeX-markup-replace-alist
-  `(;; Commands defined to work in both math and text mode.  (Dashes are
-    ;; separate because they are not backslash-escaped, unlike everything else.)
-    ("---\\|\\\\textemdash\\(?: +\\|{}\\|\\>\\)" . "\N{EM DASH}")
-    ("--\\|\\\\textendash\\(?: +\\|{}\\|\\>\\)"  . "\N{EN DASH}")
-    ,@(mapcar
-       (apply-partially 'apply 'parsebib--build-TeX-command-regexp)
-       '((("ddag" "textdaggerdbl")        "\N{DOUBLE DAGGER}")
-         (("dag" "textdagger")            "\N{DAGGER}")
-         ("textpertenthousand"            "\N{PER TEN THOUSAND SIGN}")
-         ("textperthousand"               "\N{PER MILLE SIGN}")
-         ("textquestiondown"              "\N{INVERTED QUESTION MARK}")
-         ("P"                             "\N{PILCROW SIGN}")
-         ("textdollar"                    "$")
-         ("S"                             "\N{SECTION SIGN}")
-         (("ldots" "dots" "textellipsis") "\N{HORIZONTAL ELLIPSIS}")))
+(defvar parsebib-TeX-command-replacement-alist
+  '(("ddag" . "\N{DOUBLE DAGGER}")
+    ("textdaggerdbl" . "\N{DOUBLE DAGGER}")
+    ("dag" . "\N{DAGGER}")
+    ("textdagger" . "\N{DAGGER}")
+    ("textpertenthousand" . "\N{PER TEN THOUSAND SIGN}")
+    ("textperthousand" . "\N{PER MILLE SIGN}")
+    ("textquestiondown" . "\N{INVERTED QUESTION MARK}")
+    ("P" . "\N{PILCROW SIGN}")
+    ("textdollar" . "$")
+    ("S" . "\N{SECTION SIGN}")
+    ("ldots" . "\N{HORIZONTAL ELLIPSIS}")
+    ("dots" . "\N{HORIZONTAL ELLIPSIS}")
+    ("textellipsis" . "\N{HORIZONTAL ELLIPSIS}")
+    ("textemdash" . "\N{EM DASH}")
+    ("textendash" . "\N{EN DASH}")
 
-    ;; Text-mode Accents
-    ,@(mapcar
-       (apply-partially 'apply 'parsebib--build-TeX-accent-command-regexp)
-       '(("\"" "\N{COMBINING DIAERESIS}")
-         ("'"  "\N{COMBINING ACUTE ACCENT}")
-         ("."  "\N{COMBINING DOT ABOVE}")
-         ("="  "\N{COMBINING MACRON}")
-         ("^"  "\N{COMBINING CIRCUMFLEX ACCENT}")
-         ("`"  "\N{COMBINING GRAVE ACCENT}")
-         ("b"  "\N{COMBINING MACRON BELOW}")
-         ("c"  "\N{COMBINING CEDILLA}")
-         ("d"  "\N{COMBINING DOT BELOW}")
-         ("H"  "\N{COMBINING DOUBLE ACUTE ACCENT}")
-         ("k"  "\N{COMBINING OGONEK}")
-         ("U"  "\N{COMBINING DOUBLE VERTICAL LINE ABOVE}")
-         ("u"  "\N{COMBINING BREVE}")
-         ("v"  "\N{COMBINING CARON}")
-         ("~"  "\N{COMBINING TILDE}")
-         ("|"  "\N{COMBINING COMMA ABOVE}")
-         ("f"  "\N{COMBINING INVERTED BREVE}")
-         ("G"  "\N{COMBINING DOUBLE GRAVE ACCENT}")
-         ("h"  "\N{COMBINING HOOK ABOVE}")
-         ("C"  "\N{COMBINING DOUBLE GRAVE ACCENT}")
-         ("r"  "\N{COMBINING RING ABOVE}")))
+    ;; Non-ASCII Letters (Excluding Accented Letters)
+    ("AA" . "\N{LATIN CAPITAL LETTER A WITH RING ABOVE}")
+    ("AE" . "\N{LATIN CAPITAL LETTER AE}")
+    ("DH" . "\N{LATIN CAPITAL LETTER ETH}")
+    ("DJ" . "\N{LATIN CAPITAL LETTER ETH}")
+    ("L"  . "\N{LATIN CAPITAL LETTER L WITH STROKE}")
+    ("SS" . "\N{LATIN CAPITAL LETTER SHARP S}")
+    ("NG" . "\N{LATIN CAPITAL LETTER ENG}")
+    ("OE" . "\N{LATIN CAPITAL LIGATURE OE}")
+    ("O"  . "\N{LATIN CAPITAL LETTER O WITH STROKE}")
+    ("TH" . "\N{LATIN CAPITAL LETTER THORN}")
 
-    ;; LaTeX2 Escapable "Special" Characters
-    ("\\\\%" . "%") ("\\\\&" . "&") ("\\\\#" . "#") ("\\\\\\$" . "$")
+    ("aa" . "\N{LATIN SMALL LETTER A WITH RING ABOVE}")
+    ("ae" . "\N{LATIN SMALL LETTER AE}")
+    ("dh" . "\N{LATIN SMALL LETTER ETH}")
+    ("dj" . "\N{LATIN SMALL LETTER ETH}")
+    ("l"  . "\N{LATIN SMALL LETTER L WITH STROKE}")
+    ("ss" . "\N{LATIN SMALL LETTER SHARP S}")
+    ("ng" . "\N{LATIN SMALL LETTER ENG}")
+    ("oe" . "\N{LATIN SMALL LIGATURE OE}")
+    ("o"  . "\N{LATIN SMALL LETTER O WITH STROKE}")
+    ("th" . "\N{LATIN SMALL LETTER THORN}")
 
+    ("ij" . "ij")
+    ("i" . "\N{LATIN SMALL LETTER DOTLESS I}")
+    ("j" . "\N{LATIN SMALL LETTER DOTLESS J}")
+    ;; Formatting Commands
+    ("textit" . parsebib--convert-tex-italics)
+    ("emph"   . parsebib--convert-tex-italics)
+    ("textbf" . parsebib--convert-tex-bold)
+    ("textsc" . parsebib--convert-tex-small-caps)))
+
+(defvar parsebib-TeX-accent-replacement-alist
+  '(("\"" . "\N{COMBINING DIAERESIS}")
+    ("'" . "\N{COMBINING ACUTE ACCENT}")
+    ("." . "\N{COMBINING DOT ABOVE}")
+    ("=" . "\N{COMBINING MACRON}")
+    ("^" . "\N{COMBINING CIRCUMFLEX ACCENT}")
+    ("`" . "\N{COMBINING GRAVE ACCENT}")
+    ("b" . "\N{COMBINING MACRON BELOW}")
+    ("c" . "\N{COMBINING CEDILLA}")
+    ("d" . "\N{COMBINING DOT BELOW}")
+    ("H" . "\N{COMBINING DOUBLE ACUTE ACCENT}")
+    ("k" . "\N{COMBINING OGONEK}")
+    ("U" . "\N{COMBINING DOUBLE VERTICAL LINE ABOVE}")
+    ("u" . "\N{COMBINING BREVE}")
+    ("v" . "\N{COMBINING CARON}")
+    ("~" . "\N{COMBINING TILDE}")
+    ("|" . "\N{COMBINING COMMA ABOVE}")
+    ("f" . "\N{COMBINING INVERTED BREVE}")
+    ("G" . "\N{COMBINING DOUBLE GRAVE ACCENT}")
+    ("h" . "\N{COMBINING HOOK ABOVE}")
+    ("C" . "\N{COMBINING DOUBLE GRAVE ACCENT}")
+    ("r" . "\N{COMBINING RING ABOVE}") ))
+
+(defvar parsebib-TeX-literal-replacement-alist
+  ;; LaTeX2 Escapable "Special" Characters
+  `(("\\%" . "%") ("\\&" . "&") ("\\#" . "#") ("\\$" . "$")
     ;; Quotes
     ("``" . "\N{LEFT DOUBLE QUOTATION MARK}")
     ("`"  . "\N{LEFT SINGLE QUOTATION MARK}")
     ("''" . "\N{RIGHT DOUBLE QUOTATION MARK}")
     ("'"  . "\N{RIGHT SINGLE QUOTATION MARK}")
-
-    ;; Formatting Commands
-    ("\\\\textit{\\(.*?\\)}" . parsebib--convert-tex-italics)
-    ("\\\\emph{\\(.*?\\)}"   . parsebib--convert-tex-italics)
-    ("\\\\textbf{\\(.*?\\)}" . parsebib--convert-tex-bold)
-    ("\\\\textsc{\\(.*?\\)}" . parsebib--convert-tex-small-caps)
-
-    ;; Non-ASCII Letters (Excluding Accented Letters)
-    ,@(mapcar
-       (apply-partially 'apply 'parsebib--build-TeX-command-regexp)
-       '(("AA" "\N{LATIN CAPITAL LETTER A WITH RING ABOVE}")
-         ("AE" "\N{LATIN CAPITAL LETTER AE}")
-         ("DH" "\N{LATIN CAPITAL LETTER ETH}")
-         ("DJ" "\N{LATIN CAPITAL LETTER ETH}")
-         ("L"  "\N{LATIN CAPITAL LETTER L WITH STROKE}")
-         ("SS" "\N{LATIN CAPITAL LETTER SHARP S}")
-         ("NG" "\N{LATIN CAPITAL LETTER ENG}")
-         ("OE" "\N{LATIN CAPITAL LIGATURE OE}")
-         ("O"  "\N{LATIN CAPITAL LETTER O WITH STROKE}")
-         ("TH" "\N{LATIN CAPITAL LETTER THORN}")
-
-         ("aa" "\N{LATIN SMALL LETTER A WITH RING ABOVE}")
-         ("ae" "\N{LATIN SMALL LETTER AE}")
-         ("dh" "\N{LATIN SMALL LETTER ETH}")
-         ("dj" "\N{LATIN SMALL LETTER ETH}")
-         ("l"  "\N{LATIN SMALL LETTER L WITH STROKE}")
-         ("ss" "\N{LATIN SMALL LETTER SHARP S}")
-         ("ng" "\N{LATIN SMALL LETTER ENG}")
-         ("oe" "\N{LATIN SMALL LIGATURE OE}")
-         ("o"  "\N{LATIN SMALL LETTER O WITH STROKE}")
-         ("th" "\N{LATIN SMALL LETTER THORN}")
-
-         ("ij" "ij")
-         ("i"  "\N{LATIN SMALL LETTER DOTLESS I}")
-         ("j"  "\N{LATIN SMALL LETTER DOTLESS J}")))
-
-    ;; Commands with obligatory non-empty argument
-    ("\\\\[a-zA-Z*]+\\(?:\\[.*\\]\\)?{\\(.+?\\)}" . "\\1")
-
-    ;; Commands without arguments, optionally terminated by empty braces
-    ("\\(\\\\[a-zA-Z*]+\\)\\(?:\\[.*\\]\\)?\\(?:{}\\)?" . "\\1")
-
-    ;; Collapse white space
-    ("[[:blank:]]+" . " ")
-
+    ;; Dashes
+    ("---" . "\N{EM DASH}")
+    ("--" . "\N{EN DASH}")
     ;; Remove all remaining {braces}
-    ("{" . "") ("}" . ""))
+    ("{" . "") ("}" . "")))
+
+(defvar parsebib-TeX-markup-replace-alist
+  `((,(rx "\\" (group-n 1 (or (1+ letter) nonl))
+          (: (* blank) (opt (or (: (* (: "[" (* (not "]")) "]"))
+                                 "{" (group-n 2 (0+ (not "}"))) (opt "}"))
+                                (group-n 3 letter)))))
+     . parsebib--replace-command-or-accent)
+    ;;This needs to be fixed. If `parsebib-TeX-literal-replacement-alist' is
+    ;;modified by a user. Nothing will change.
+    (,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
+                         (1+ blank)))
+     . parsebib--replace-literal))
+
   "Alist of strings and replacements for TeX markup.
 This is used in `parsebib-clean-TeX-markup' to make TeX markup more
 suitable for display.  Each item in the list consists of a regexp
@@ -355,12 +356,37 @@ simply replace the match) or a function (the match will be
 replaced by the result of calling the function on the match
 string).  Earlier elements are evaluated before later ones, so if
 one string is a subpattern of another, the second must appear
-later (e.g. \"''\" is before \"'\").")
+later (e.g. \"\" is before \"'\").")
 
 (defvar parsebib-clean-TeX-markup-excluded-fields '("file"
                                                     "url"
                                                     "doi")
   "List of fields that should not be passed to `parsebib-clean-TeX-markup'.")
+
+(defun parsebib--replace-command-or-accent (string)
+  "Return the replacement text for the command or accent matched by STRING."
+  (let* ((cmd (match-string 1 string))
+         (bar (match-string 2 string))
+         (arg (if bar bar (match-string 3 string)))
+         (acc (alist-get cmd parsebib-TeX-accent-replacement-alist nil nil #'equal))
+         (rep (or acc (alist-get cmd parsebib-TeX-command-replacement-alist nil nil #'equal)))
+         (done (or rep (save-match-data (string-match "[a-zA-Z]" (substring cmd 0 1)))))
+         (arg (if done (and arg (parsebib-clean-TeX-markup arg))
+                (substring cmd 1)))
+         (cmd (if done cmd
+                (substring cmd 0 1)))
+         (rep (if done rep
+                (alist-get cmd parsebib-TeX-accent-replacement-alist nil nil #'equal))))
+    (cond
+     ((functionp rep) (funcall rep arg))
+     (rep (if acc (concat arg rep) (concat rep arg)))
+     ((and bar (not (equal "" bar))) bar)
+     (t (replace-regexp-in-string (rx "[" (* (not "]")) "]") "" string t t)))))
+
+(defun parsebib--replace-literal (string)
+  "Look up the replacement text for literal STRING."
+  (or (alist-get string parsebib-TeX-literal-replacement-alist nil nil #'equal)
+      " "))
 
 (defun parsebib-clean-TeX-markup (string)
   "Return STRING without TeX markup.
@@ -370,12 +396,11 @@ corresponding cdr (if the cdr is a string), or with the result of
 calling the cdr on the match (if it is a function).  This is done
 with `replace-regexp-in-string', which see for details."
   (let ((case-fold-search nil))
-    (save-match-data
-      (cl-loop for (pattern . replacement) in parsebib-TeX-markup-replace-alist
-               do (setq string (replace-regexp-in-string
-                                pattern replacement string
-                                nil (functionp replacement)))
-               finally return string))))
+    (cl-loop for (pattern . replacement) in parsebib-TeX-markup-replace-alist
+             do (setq string (replace-regexp-in-string
+                              pattern replacement string
+                              t t))
+             finally return string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Matching and parsing stuff ;;
