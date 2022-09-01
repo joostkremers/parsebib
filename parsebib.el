@@ -297,7 +297,14 @@ trailing space will be included in the overall match."
     ("textit" . parsebib--convert-tex-italics)
     ("emph"   . parsebib--convert-tex-italics)
     ("textbf" . parsebib--convert-tex-bold)
-    ("textsc" . parsebib--convert-tex-small-caps)))
+    ("textsc" . parsebib--convert-tex-small-caps))
+  "An alist of COMMAND-REPLACEMENT pair for a LaTeX command.
+
+COMMAND is the name of a TeX or LaTeX command (without
+backslash).  REPLACEMENT can be either a string or a
+function. If it is a function, it is passed the first
+mandatory argument of the COMMAND as a string and it must
+return the replacement string.")
 
 (defvar parsebib-TeX-accent-replacement-alist
   '(("\"" . "\N{COMBINING DIAERESIS}")
@@ -320,7 +327,17 @@ trailing space will be included in the overall match."
     ("G" . "\N{COMBINING DOUBLE GRAVE ACCENT}")
     ("h" . "\N{COMBINING HOOK ABOVE}")
     ("C" . "\N{COMBINING DOUBLE GRAVE ACCENT}")
-    ("r" . "\N{COMBINING RING ABOVE}") ))
+    ("r" . "\N{COMBINING RING ABOVE}") )
+"Alist of COMMAND-ACCENT pairs for LaTeX diacritics.
+
+COMMAND is the name of a TeX or LaTeX command (without
+backslash), ACCENT is the character (usually a Unicode combining
+character) that COMMAND generates.  Both COMMAND and ACCENT must
+be strings.
+
+The car of this cons cell is the COMMAND,capturing exactly one
+obligatory argument. The argument is concatenated with the accent
+to produce the display string.")
 
 (defvar parsebib-TeX-literal-replacement-alist
   ;; LaTeX2 Escapable "Special" Characters
@@ -334,19 +351,32 @@ trailing space will be included in the overall match."
     ("---" . "\N{EM DASH}")
     ("--" . "\N{EN DASH}")
     ;; Remove all remaining {braces}
-    ("{" . "") ("}" . "")))
+    ("{" . "") ("}" . ""))
+  "Alist of LITERAL-REPLACEMENT pairs. Both are strings.
 
-(defvar parsebib-TeX-markup-replace-alist
-  `((,(rx "\\" (group-n 1 (or (1+ letter) nonl))
+Note that adding such a pair to this variable has no effect
+unless `parsebib-TeX-markup-replacement-alist' is adjusted
+accordingly. For example, after adding LITERAL-REPLACEMNT
+calling,
+
+`(cl-callf (lambda (regex) (rx (or LITERAL (regexp regex))))
+    (alist-get (quote parsebib--replace-literal)
+               parsebib-TeX-markup-replacement-alist))'
+
+will ensure that LITERAL gets replaced with REPLACEMENT.")
+
+(defvar parsebib-TeX-markup-replacement-alist
+  `((parsebib--replace-command-or-accent
+     . ,(rx "\\" (group-n 1 (or (1+ letter) nonl))
+
           (: (* blank) (opt (or (: (* (: "[" (* (not "]")) "]"))
                                  "{" (group-n 2 (0+ (not "}"))) (opt "}"))
-                                (group-n 3 letter)))))
-     . parsebib--replace-command-or-accent)
+                                (group-n 3 letter))))))
     ;;This needs to be fixed. If `parsebib-TeX-literal-replacement-alist' is
     ;;modified by a user. Nothing will change.
-    (,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
-                         (1+ blank)))
-     . parsebib--replace-literal))
+    (parsebib--replace-literal
+     . ,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
+                           (1+ blank)))))
 
   "Alist of strings and replacements for TeX markup.
 This is used in `parsebib-clean-TeX-markup' to make TeX markup more
@@ -396,7 +426,7 @@ corresponding cdr (if the cdr is a string), or with the result of
 calling the cdr on the match (if it is a function).  This is done
 with `replace-regexp-in-string', which see for details."
   (let ((case-fold-search nil))
-    (cl-loop for (pattern . replacement) in parsebib-TeX-markup-replace-alist
+    (cl-loop for (replacement . pattern) in parsebib-TeX-markup-replacement-alist
              do (setq string (replace-regexp-in-string
                               pattern replacement string
                               t t))
