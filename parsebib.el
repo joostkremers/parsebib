@@ -302,7 +302,7 @@ trailing space will be included in the overall match."
 
 COMMAND is the name of a TeX or LaTeX command (without
 backslash).  REPLACEMENT can be either a string or a
-function. If it is a function, it is passed the first
+function.  If it is a function, it is passed the first
 mandatory argument of the COMMAND as a string and it must
 return the replacement string.")
 
@@ -336,7 +336,7 @@ character) that COMMAND generates.  Both COMMAND and ACCENT must
 be strings.
 
 The car of this cons cell is the COMMAND,capturing exactly one
-obligatory argument. The argument is concatenated with the accent
+obligatory argument.  The argument is concatenated with the accent
 to produce the display string.")
 
 (defvar parsebib-TeX-literal-replacement-alist
@@ -352,41 +352,53 @@ to produce the display string.")
     ("--" . "\N{EN DASH}")
     ;; Remove all remaining {braces}
     ("{" . "") ("}" . ""))
-  "Alist of LITERAL-REPLACEMENT pairs. Both are strings.
+  "Alist of LITERAL-REPLACEMENT pairs.  Both are strings.
 
 Note that adding such a pair to this variable has no effect
 unless `parsebib-TeX-markup-replacement-alist' is adjusted
-accordingly. For example, after adding LITERAL-REPLACEMNT
+accordingly.  For example, after adding LITERAL-REPLACEMNT
 calling,
 
-`(cl-callf (lambda (regex) (rx (or LITERAL (regexp regex))))
-    (alist-get (quote parsebib--replace-literal)
-               parsebib-TeX-markup-replacement-alist))'
+  (cl-callf (lambda (regex) (rx (or LITERAL (regexp regex))))
+     (alist-get (quote parsebib--replace-literal)
+                parsebib-TeX-markup-replacement-alist))
 
 will ensure that LITERAL gets replaced with REPLACEMENT.")
 
 (defvar parsebib-TeX-markup-replacement-alist
   `((parsebib--replace-command-or-accent
+     ;; This regexp matches any latex command i.e. anything that
+     ;; starts with a backslash. The name of the command which
+     ;; is either a string of alphabetic characters or a single
+     ;; non-alphabetic character is captured by group 1. The command
+     ;; can have a mandatory argument enclosed by braces which is
+     ;; captured by group 2. If the command has no arguments in
+     ;; brackets or braces, the first non-white space letter after
+     ;; the command is captured in group 3. This is to be able to deal
+     ;; with accents.
+     ;; Note that the capturing of arguments in braces is imperfect,
+     ;; because doing it properly requires sexp parsing. It will fail
+     ;; for cases like \command{\anothercommand{an arg}some text}.
      . ,(rx "\\" (group-n 1 (or (1+ letter) nonl))
-
           (: (* blank) (opt (or (: (* (: "[" (* (not "]")) "]"))
                                  "{" (group-n 2 (0+ (not "}"))) (opt "}"))
                                 (group-n 3 letter))))))
-    ;;This needs to be fixed. If `parsebib-TeX-literal-replacement-alist' is
-    ;;modified by a user. Nothing will change.
     (parsebib--replace-literal
      . ,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
                            (1+ blank)))))
-
-  "Alist of strings and replacements for TeX markup.
+  "Alist of replacements and strings for TeX markup.
 This is used in `parsebib-clean-TeX-markup' to make TeX markup more
-suitable for display.  Each item in the list consists of a regexp
-and its replacement.  The replacement can be a string (which will
+suitable for display.  Each item in the list consists of a replacement
+and a regexp.  The replacement can be a string (which will
 simply replace the match) or a function (the match will be
 replaced by the result of calling the function on the match
 string).  Earlier elements are evaluated before later ones, so if
 one string is a subpattern of another, the second must appear
-later (e.g. \"\" is before \"'\").")
+later (e.g. \"''\" is before \"'\").
+
+For the common cases of replacing a LaTeX command or a literal
+it is faster to use `parsebib-TeX-command-replacement-alist'
+and `parsebib-TeX-literal-replacement-alist' respectively.")
 
 (defvar parsebib-clean-TeX-markup-excluded-fields '("file"
                                                     "url"
@@ -396,21 +408,28 @@ later (e.g. \"\" is before \"'\").")
 (defun parsebib--replace-command-or-accent (string)
   "Return the replacement text for the command or accent matched by STRING."
   (let* ((cmd (match-string 1 string))
+         ;; bar is the argument in braces.
          (bar (match-string 2 string))
-         (arg (if bar bar (match-string 3 string)))
+         ;; If there is no argument is braces, consider the letter after
+         ;; the command as the argument. Clean this argument.
+         (arg (parsebib-clean-TeX-markup (or (if bar bar (match-string 3 string)) "")))
+         ;; Check if the cmd is an accent that needs to be replaced
+         ;; and get its replacement.
          (acc (alist-get cmd parsebib-TeX-accent-replacement-alist nil nil #'equal))
-         (rep (or acc (alist-get cmd parsebib-TeX-command-replacement-alist nil nil #'equal)))
-         (done (or rep (save-match-data (string-match "[a-zA-Z]" (substring cmd 0 1)))))
-         (arg (if done (and arg (parsebib-clean-TeX-markup arg))
-                (substring cmd 1)))
-         (cmd (if done cmd
-                (substring cmd 0 1)))
-         (rep (if done rep
-                (alist-get cmd parsebib-TeX-accent-replacement-alist nil nil #'equal))))
+         ;; If it is not an accent, check if it is a command that needs to be replaced
+         ;; and get the replacement.
+         (rep (or acc (alist-get cmd parsebib-TeX-command-replacement-alist nil nil #'equal))))
     (cond
+     ;; If replacement is a function call it with the argument.
      ((functionp rep) (funcall rep arg))
+     ;; Otherwise combine the replacement with the argument. The order of combination
+     ;; depends on whether the command is an accent or not.
      (rep (if acc (concat arg rep) (concat rep arg)))
+     ;; Now we handle the fallback cases. If there is a bracked argument but no
+     ;; replacement for the command was found, consider the replacement to be
+     ;; empty.
      ((and bar (not (equal "" bar))) bar)
+     ;; Otherwise clean any optional arguments by discarding them.
      (t (replace-regexp-in-string (rx "[" (* (not "]")) "]") "" string t t)))))
 
 (defun parsebib--replace-literal (string)
