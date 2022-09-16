@@ -179,65 +179,6 @@ target field is set to the symbol `none'.")
 (defconst parsebib--key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
-(defun parsebib--build-TeX-accent-command-regexp (command accent)
-  "Build a regexp-replacement pair for LaTeX diacritics.
-
-COMMAND is the name of a TeX or LaTeX command (without
-backslash), ACCENT is the character (usually a Unicode combining
-character) that COMMAND generates.  Both COMMAND and ACCENT must
-be strings.
-
-The return value is a cons cell that can be included in
-`parsebib-TeX-markup-replace-alist' directly.
-
-The car of this cons cell is a regexp matching the TeX or LaTeX
-COMMAND, capturing exactly one obligatory argument.  The
-cdr is a replacement string, the concatenation of \"\\1\" and
-ACCENT.
-
-Specifically, the car regexp matches a string composed of a
-backslash, followed by COMMAND and a single letter (i.e.
-matching [[:alpha:]]).  The regexp matches if the letter is in
-curly braces (\"\\d{a}\") or if it is separated from COMMAND by
-white space (\"\\d a\".  If COMMAND is a non-letter character,
-the regexp also matches if the letter follows COMMAND
-immediately, without white space or curly braces (\"\\'a\").  In
-all variants, the letter is captured with group number 1."
-  (cons
-   (rx-to-string
-    `(: "\\" ,command
-        (or (: (* blank) "{" (group-n 1 letter) "}")
-            (: (,(if (string-match "[a-zA-Z]" command) '+ '*) blank)
-               (group-n 1 letter))))
-    t)
-   (rx-to-string `(: (backref 1) ,accent) t)))
-
-(defun parsebib--build-TeX-command-regexp (command replacement)
-  "Build a regexp-replacement pair for a LaTeX command.
-
-COMMAND is the name of a TeX or LaTeX command (without
-backslash).  Both COMMAND and REPLACEMENT must be strings.
-
-The return value is a cons cell: its car is a regexp matching
-COMMAND, its cdr is REPLACEMENT.  This cons cell can be included
-in `parsebib-TeX-markup-replace-alist' directly.
-
-Specifically, the regexp matches a string composed of a backslash
-followed by COMMAND and terminated by a pair of curly
-braces (`\\COMMAND{}'), a word ending or a space.  Such a
-trailing space will be included in the overall match."
-  (cons
-   (rx-to-string
-    `(: "\\" ,(if (listp command) `(or ,@command) command)
-        ;; If a command is terminated by a space, LaTeX includes that
-        ;; space in the command itself, so it is not printed (like the
-        ;; behaviour for a following {}) Accordingly, if there is one,
-        ;; include that space in the replaced string by matching on it
-        ;; first.
-        (or (+ blank) word-end "{}"))
-    t)
-   replacement))
-
 (defun parsebib--convert-tex-italics (str)
   "Return STR with face property `italic'."
   (propertize str 'face 'italic))
