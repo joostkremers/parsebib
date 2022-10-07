@@ -333,8 +333,8 @@ See `parsebib-TeX-markup-replacement-alist' and the function
      ;; because doing it properly requires sexp parsing. It will fail
      ;; for cases like \command{\anothercommand{an arg}some text}.
      . ,(rx "\\" (group-n 1 (or (1+ letter) nonl))
-          (: (* blank) (opt (or (: (* (: "[" (* (not "]")) "]"))
-                                 "{" (group-n 2 (0+ (not "}"))) (opt "}"))
+          (: (* blank) (opt (or (: (* (: "[" (* (not (any "]"))) "]"))
+                                 "{" (group-n 2 (0+ (not (any "}")))) (opt "}"))
                                 (group-n 3 letter))))))
     (parsebib--replace-literal
      . ,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
@@ -383,7 +383,7 @@ and `parsebib-TeX-literal-replacement-alist' respectively.")
      ;; empty.
      ((and bar (not (equal "" bar))) bar)
      ;; Otherwise clean any optional arguments by discarding them.
-     (t (replace-regexp-in-string (rx "[" (* (not "]")) "]") "" string t t)))))
+     (t (replace-regexp-in-string (rx "[" (* (not (any "]"))) "]") "" string t t)))))
 
 (defun parsebib--replace-literal (string)
   "Look up the replacement text for literal STRING."
