@@ -631,7 +631,7 @@ point."
       (if (looking-at-p "[[:space:]]*[\(\{]")
           (progn (skip-chars-forward "[:space:]")
                  (parsebib--match-paren-forward))
-        (goto-char (point-at-eol)))
+        (goto-char (line-end-position)))
       (buffer-substring-no-properties beg (point)))))
 
 (defun parsebib-read-string (&optional pos strings)
