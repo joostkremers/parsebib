@@ -44,7 +44,7 @@ When `@string` abbreviations are expanded, abbreviations in field values (or `@s
 
 Resolving cross-references means that if an entry that has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
 
-Prettifying TeX markup involves replacing LaTeX commands for special characters with their Unicode representations (i.e., `\textdollar` is replaced with $, `\S` with §, etc.), removal of any remaining LaTeX commands and braces. Obligatory arguments of LaTeX commands are retained, and the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc. (provided a suitable font is used in Emacs).
+Prettifying TeX markup involves replacing LaTeX commands for special characters with their Unicode representations (i.e., `\textdollar` is replaced with $, `\S` with §, etc.), replacing LaTeX commands that have an obligatory argument with that argument (commands that have no obligatory argument, such as `\LaTeX`, are retained), removing optional arguments and removing braces. In addition, the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc. (provided a suitable font is used in Emacs).
 
 Expanding `@Strings` and resolving cross-references can also be done across files, if the result of parsing one file are passed as arguments when parsing the next file. Details are discussed below.
 
