@@ -9,9 +9,9 @@ The library provides functions that parse the current buffer. They are intended 
 
 The bibliographic data is returned as a hash table. To parse multiple files, you can either insert them all into one temp buffer, or pass the hash table obtained by parsing the first buffer as an argument when parsing the next buffer.
 
-The data in the bibliography file can be returned in two ways. The first option is for `parsebib` to return the contents of the file accurately. This means that the field values as returned by `parsebib` are literally the field values in the file. For various reasons, however, this representation is not ideal if you want to present the content of a bibliography file to the user with the aim of selecting one or more entries
+The data in the bibliography file can be returned in two ways. The first option is for `parsebib` to return the contents of the file accurately. This means that the field values as returned by `parsebib` are literally the field values in the file. For various reasons, however, this representation is not ideal if you want to present the content of a bibliography file to the user with the aim of selecting one or more entries.
 
-Therefore, the second option is for `parsebib` to return the field values in such a way that they are suitable for display. For BibTeX / `biblatex` files, this means that `@String` abbreviations are expanded and cross-references are resolved. For CSL-JSON files, it means that field values that are not strings (notably name and date fields) are converted to strings in a sensible way.
+Therefore, the second option is for `parsebib` to return the field values in such a way that they are suitable for display. For BibTeX / `biblatex` files, this means that `@String` abbreviations are expanded, cross-references are resolved and TeX markup is prettified or removed. For CSL-JSON files, it means that field values that are not strings (notably name and date fields) are converted to strings in a sensible way.
 
 
 ## BibTeX / `biblatex` vs. CSL-JSON ##
@@ -38,9 +38,13 @@ Support for `.bib` files comes in two different APIs, a higher-level one that re
 
 ### Returning entries for display ###
 
-In order to return entries in a way that is suitable for display, `parsebib` can expand `@string` abbreviations and resolve cross-references while reading the contents of a `.bib` file. When `@string` abbreviations are expanded, abbreviations in field values (or `@string` definitions) are replaced with their expansion. In addition, the braces or double quotes around field values are removed, and multiple spaces and newlines in sequence are reduced to a single space.
+In order to return entries in a way that is suitable for display, `parsebib` can expand `@string` abbreviations, resolve cross-references and prettify or remove TeX markup while reading the contents of a `.bib` file. In addition, the braces or double quotes around field values are removed, and multiple spaces and newlines in sequence are reduced to a single space.
+
+When `@string` abbreviations are expanded, abbreviations in field values (or `@string` definitions) are replaced with their expansion, so that field values are (more or less) shown the way they would appear after processing with BibTeX / `biblatex`.
 
 Resolving cross-references means that if an entry that has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
+
+Prettifying TeX markup involves replacing LaTeX commands for special characters with their Unicode representations (i.e., `\textdollar` is replaced with $, `\S` with §, etc.), removal of any remaining LaTeX commands and braces. Obligatory arguments of LaTeX commands are retained, and the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc. (provided a suitable font is used in Emacs).
 
 Expanding `@Strings` and resolving cross-references can also be done across files, if the result of parsing one file are passed as arguments when parsing the next file. Details are discussed below.
 
