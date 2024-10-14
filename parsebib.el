@@ -1,12 +1,12 @@
 ;;; parsebib.el --- A library for parsing bib files  -*- lexical-binding: t -*-
 
-;; Copyright (c) 2014-2022 Joost Kremers
+;; Copyright (c) 2014-2024 Joost Kremers
 ;; All rights reserved.
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 2014
-;; Version: 4.3
+;; Version: 4.4
 ;; Keywords: text bibtex
 ;; URL: https://github.com/joostkremers/parsebib
 ;; Package-Requires: ((emacs "25.1"))
