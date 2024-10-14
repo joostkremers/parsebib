@@ -38,15 +38,17 @@ Support for `.bib` files comes in two different APIs, a higher-level one that re
 
 ### Returning entries for display ###
 
-In order to return entries in a way that is suitable for display, `parsebib` can expand `@string` abbreviations, resolve cross-references and prettify or remove TeX markup while reading the contents of a `.bib` file. In addition, the braces or double quotes around field values are removed, and multiple spaces and newlines in sequence are reduced to a single space.
+In order to return entries in a way that is suitable for display, `parsebib` can post-process field values while reading the contents of a `.bib` file. This post-processing involves a number of modifications. First, it removes the braces or double quotes around field values, and it collapses sequences of multiple spaces and newlines into a single space.
 
-When `@string` abbreviations are expanded, abbreviations in field values (or `@string` definitions) are replaced with their expansion, so that field values are (more or less) shown the way they would appear after processing with BibTeX / `biblatex`.
+Furthermore, TeX markup is prettified: LaTeX commands for special characters are replaced with their (Unicode) representations (i.e. `\textdollar` is replaced with $, `\S` with §, `---` with —, etc.), LaTeX commands that have an obligatory argument are replaced with that argument, optional arguments and braces are removed. In addition, the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc., (provided a suitable font is used in Emacs). LaTeX commands that have no obligatory argument, such as `\LaTeX`, are retained.
 
-Resolving cross-references means that if an entry that has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
+Post-processing also involves expanding `@String` abbreviations: abbreviations in field values (or `@String` definitions) are replaced with their definition, so that field values are (more or less) shown the way they would appear after processing with BibTeX / `biblatex`.
 
-Prettifying TeX markup involves replacing LaTeX commands for special characters with their Unicode representations (i.e., `\textdollar` is replaced with $, `\S` with §, etc.), replacing LaTeX commands that have an obligatory argument with that argument (commands that have no obligatory argument, such as `\LaTeX`, are retained), removing optional arguments and removing braces. In addition, the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc. (provided a suitable font is used in Emacs).
+The `file`, `url` and `doi` fields are excluded from any post-processing, because they don't contain any TeX code or `@String` abbreviations, and because modifying them may actually be harmful (e.g., replacing multiple spaces with a single space in a file name). You can exclude more fields from post-processing by adding them to the variable `parsebib-postprocessing-excluded-fields`.
 
-Expanding `@Strings` and resolving cross-references can also be done across files, if the result of parsing one file are passed as arguments when parsing the next file. Details are discussed below.
+In addition to this post-processing, `parsebib` can resolve cross-references. This means that if an entry has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
+
+Expanding `@Strings` and resolving cross-references can also be done across files, by passing the result of parsing one file as arguments when parsing the next file. Details are discussed below.
 
 Note that if you wish to resolve cross-references, it is usually also necessary to expand `@String` abbreviations, because the `crossref` field may contain such an abbreviation. Resolving such a cross-reference will not work unless the abbreviation is expanded.
 
@@ -66,7 +68,7 @@ Collect all entries in the current buffer and return them as a hash table, where
 
 The argument `entries` can be used to pass a (possibly non-empty) hash table in which the entries are stored. This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file.
 
-If the argument `strings` is present, `@string` abbreviations are expanded. `strings` should be a hash table of `@string` definitions as returned by `parsebib-collect-strings`.
+If the argument `strings` is present, `@String` abbreviations are expanded. `strings` should be a hash table of `@String` definitions as returned by `parsebib-collect-strings`.
 
 If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer *above* the current entry, and also against the entries in the hash table `entries`.
 
