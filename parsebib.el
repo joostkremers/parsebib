@@ -353,10 +353,18 @@ For the common cases of replacing a LaTeX command or a literal
 it is faster to use `parsebib-TeX-command-replacement-alist'
 and `parsebib-TeX-literal-replacement-alist' respectively.")
 
-(defvar parsebib-clean-TeX-markup-excluded-fields '("file"
-                                                    "url"
-                                                    "doi")
-  "List of fields that should not be passed to `parsebib-clean-TeX-markup'.")
+(define-obsolete-variable-alias 'parsebib-clean-TeX-markup-excluded-fields
+  'parsebib-postprocessing-excluded-fields
+  "parsebib.el 4.4")
+
+(defvar parsebib-postprocessing-excluded-fields '("file"
+                                                  "url"
+                                                  "doi")
+  "List of fields that should not be post-processed.
+Post-processing involves expanding @String abbreviations,
+prettifying TeX markup, removing braces or double quotes around
+field values and collapsing whitespace.")
+
 
 (defun parsebib--replace-command-or-accent (string)
   "Return the replacement text for the command or accent matched by STRING."
@@ -768,8 +776,10 @@ ASCII/Unicode characters.  See the variable
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let* ((field (buffer-substring-no-properties beg (point)))
+                 (strings (and strings
+                               (not (member-ignore-case field parsebib-postprocessing-excluded-fields))))
                  (replace-TeX (and replace-TeX
-                                   (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields)))))
+                                   (not (member-ignore-case field parsebib-postprocessing-excluded-fields)))))
             (if (or (not fields)
                     (member-ignore-case field fields))
                 (cons field (parsebib--parse-bib-value limit strings replace-TeX))
