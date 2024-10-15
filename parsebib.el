@@ -776,8 +776,8 @@ ASCII/Unicode characters.  See the variable
     (let ((beg (point)))
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let* ((field (buffer-substring-no-properties beg (point)))
-                 (strings (and strings
-                               (not (member-ignore-case field parsebib-postprocessing-excluded-fields))))
+                 (strings (and (not (member-ignore-case field parsebib-postprocessing-excluded-fields))
+                               strings))
                  (replace-TeX (and replace-TeX
                                    (not (member-ignore-case field parsebib-postprocessing-excluded-fields)))))
             (if (or (not fields)
