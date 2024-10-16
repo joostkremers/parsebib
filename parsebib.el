@@ -461,9 +461,8 @@ that parsing may stop well before LIMIT.
 
 STRINGS, if non-nil, is a hash table of @String definitions.
 @String abbrevs in the value to be parsed are then replaced with
-their expansions.  Additionally, newlines in field values are
-removed, white space is reduced to a single space and braces or
-double quotes around field values are removed.
+their expansions.  Additionally, newlines in field values and
+braces or double quotes around field values are removed.
 
 REPLACE-TEX indicates whether TeX markup should be replaced with
 ASCII/Unicode characters.  See the variable
@@ -498,10 +497,10 @@ ASCII/Unicode characters.  See the variable
 STRINGS is a list of strings.  If a string in STRINGS has an
 expansion in hash table ABBREVS, replace it with its expansion.
 Otherwise, if the string is enclosed in braces {} or double
-quotes \"\", remove the delimiters.  In addition, newlines and
-multiple spaces in the string are replaced with a single space."
+quotes \"\", remove the delimiters.  In addition, newlines, tabs
+and form feeds in the string are replaced with spaces."
   (mapcar (lambda (str)
-            (setq str (replace-regexp-in-string "[ \t\n\f[:space:]]+" " " str))
+            (setq str (replace-regexp-in-string "[\t\n\f]]+" " " str))
             (cond
              ((gethash str abbrevs))
              ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)

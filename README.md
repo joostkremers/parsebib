@@ -38,7 +38,7 @@ Support for `.bib` files comes in two different APIs, a higher-level one that re
 
 ### Returning entries for display ###
 
-In order to return entries in a way that is suitable for display, `parsebib` can post-process field values while reading the contents of a `.bib` file. This post-processing involves a number of modifications. First, it removes the braces or double quotes around field values, and it collapses sequences of multiple spaces and newlines into a single space.
+In order to return entries in a way that is suitable for display, `parsebib` can post-process field values while reading the contents of a `.bib` file. This post-processing involves a number of modifications. First, it removes the braces or double quotes around field values, and replaces newlines, tabs and form feeds with spaces.
 
 Furthermore, TeX markup is prettified: LaTeX commands for special characters are replaced with their (Unicode) representations (i.e. `\textdollar` is replaced with $, `\S` with §, `---` with —, etc.), LaTeX commands that have an obligatory argument are replaced with that argument, optional arguments and braces are removed. In addition, the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc., (provided a suitable font is used in Emacs). LaTeX commands that have no obligatory argument, such as `\LaTeX`, are retained.
 
