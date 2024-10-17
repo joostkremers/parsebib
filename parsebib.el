@@ -453,6 +453,64 @@ if a matching delimiter was found."
     ;; If forward-sexp does not result in an error, we want to return t.
     t))
 
+;; `parsebib--parse-bib-value' parses a BibTeX field value and optionally
+;; applies some post-processing to it. This post-processing is meant to
+;; make the value suitable for display. Once post-processed, the value is
+;; no longer a faithful representation of the contents of the .bib file.
+;;
+;; Post-processing consists of the following steps:
+;;
+;; 1. Replacing or removing TeX commands; see the variable
+;;    `parsebib-TeX-markup-replacement-alist' for details.
+;; 2. Expanding @String abbreviations
+;; 3. Replacing sequences of [\n\t\f] with a single space.
+;; 4. Unquoting field values, by removing the double quotes or braces around them.
+;;
+;; Note that originally, action 3 also involved replacing multiple spaces
+;; with a single space. This was disabled after Github issue #33 turned
+;; up. See there for details.
+;;
+;; Action 1 is controlled by the parameter `replace-TeX', actions 2-4 are
+;; controlled by the parameter `strings'. This isn't great, because the
+;; three actions don't really have much to do with each other
+;; conceptually. They are combined here because it was thought they would
+;; always occur together.
+;;
+;; Github issue #33 shows that that is not always the case, however. The
+;; issue is that file names may contain sequences of spaces, and if
+;; sequences of spaces are reduced to a single space, the file name becomes
+;; incorrect and the corresponding file cannot be found anymore.
+;;
+;; My initial thought was to exclude the file, url and doi fields from any
+;; post-processing, but that also doesn't work, because then those fields
+;; show up quoted (i.e., in double quotes or braces), which also means the
+;; corresponding file cannot be found, and the URL/DOI cannot be
+;; opened. OTOH, always unquoting field values breaks Ebib, because Ebib
+;; expects field values to be returned *with* quotes/braces if they are
+;; present in the .bib file.
+;;
+;; Ultimately, to apply post-processing, we need to know which field we are
+;; dealing with and whether to apply any post-processing at
+;; all. `parsebib--parse-bib-value' does not know which field it is
+;; processing, it just reads the value. Therefore,
+;; `parsebib--parse-bibtex-field' determines whether to clean up TeX
+;; markup, but it cannot decide whether to expand @String abbreviations,
+;; because the other two actions, reducing whitespace and unquoting values,
+;; depend on it.
+;;
+;; What would be needed is a more fine-grained structure: the different
+;; actions should be isolated and `parsebib--parse-bib-value' needs to know
+;; which ones it should apply. That would alloy the calling function
+;; (mostly `parsebib--parse-bibtex-field') to specify exactly which
+;; post-processing to apply.
+;;
+;; A nice way to do this would be to pass a list of functions to
+;; `parsebib--parse-bib-value', but that's complicated because of the fact
+;; that the functions would have different requirements. At least the
+;; function that expands @String abbreviations needs the @String
+;; definitions as an additional argument. We may be able to use
+;; `apply-partially', though, to make that work.
+
 (defun parsebib--parse-bib-value (limit &optional strings replace-TeX)
   "Parse value at point.
 A value is either a field value or a @String expansion.  Return
