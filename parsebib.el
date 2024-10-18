@@ -353,11 +353,6 @@ For the common cases of replacing a LaTeX command or a literal
 it is faster to use `parsebib-TeX-command-replacement-alist'
 and `parsebib-TeX-literal-replacement-alist' respectively.")
 
-(defvar parsebib-clean-TeX-markup-excluded-fields '("file"
-                                                    "url"
-                                                    "doi")
-  "List of fields that should not be passed to `parsebib-clean-TeX-markup'.")
-
 (defun parsebib--replace-command-or-accent (string)
   "Return the replacement text for the command or accent matched by STRING."
   (let* ((cmd (match-string 1 string))
@@ -398,11 +393,15 @@ corresponding cdr (if the cdr is a string), or with the result of
 calling the cdr on the match (if it is a function).  This is done
 with `replace-regexp-in-string', which see for details."
   (let ((case-fold-search nil))
-    (cl-loop for (replacement . pattern) in parsebib-TeX-markup-replacement-alist
-             do (setq string (replace-regexp-in-string
-                              pattern replacement string
-                              t t))
-             finally return string)))
+    (cl-flet ((replace-markup (string)
+                (cl-loop for (replacement . pattern) in parsebib-TeX-markup-replacement-alist
+                         do (setq string (replace-regexp-in-string
+                                          pattern replacement string
+                                          t t))
+                         finally return string)))
+      (if (listp strings)
+          (mapcar #'replace-markup strings)
+        (replace-markup strings)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Matching and parsing stuff ;;
@@ -453,118 +452,105 @@ if a matching delimiter was found."
     ;; If forward-sexp does not result in an error, we want to return t.
     t))
 
-;; `parsebib--parse-bib-value' parses a BibTeX field value and optionally
-;; applies some post-processing to it. This post-processing is meant to
-;; make the value suitable for display. Once post-processed, the value is
-;; no longer a faithful representation of the contents of the .bib file.
-;;
-;; Post-processing consists of the following steps:
-;;
-;; 1. Replacing or removing TeX commands; see the variable
-;;    `parsebib-TeX-markup-replacement-alist' for details.
-;; 2. Expanding @String abbreviations
-;; 3. Replacing sequences of [\n\t\f] with a single space.
-;; 4. Unquoting field values, by removing the double quotes or braces around them.
-;;
-;; Note that originally, action 3 also involved replacing multiple spaces
-;; with a single space. This was disabled after Github issue #33 turned
-;; up. See there for details.
-;;
-;; Action 1 is controlled by the parameter `replace-TeX', actions 2-4 are
-;; controlled by the parameter `strings'. This isn't great, because the
-;; three actions don't really have much to do with each other
-;; conceptually. They are combined here because it was thought they would
-;; always occur together.
-;;
-;; Github issue #33 shows that that is not always the case, however. The
-;; issue is that file names may contain sequences of spaces, and if
-;; sequences of spaces are reduced to a single space, the file name becomes
-;; incorrect and the corresponding file cannot be found anymore.
-;;
-;; My initial thought was to exclude the file, url and doi fields from any
-;; post-processing, but that also doesn't work, because then those fields
-;; show up quoted (i.e., in double quotes or braces), which also means the
-;; corresponding file cannot be found, and the URL/DOI cannot be
-;; opened. OTOH, always unquoting field values breaks Ebib, because Ebib
-;; expects field values to be returned *with* quotes/braces if they are
-;; present in the .bib file.
-;;
-;; Ultimately, to apply post-processing, we need to know which field we are
-;; dealing with and whether to apply any post-processing at
-;; all. `parsebib--parse-bib-value' does not know which field it is
-;; processing, it just reads the value. Therefore,
-;; `parsebib--parse-bibtex-field' determines whether to clean up TeX
-;; markup, but it cannot decide whether to expand @String abbreviations,
-;; because the other two actions, reducing whitespace and unquoting values,
-;; depend on it.
-;;
-;; What would be needed is a more fine-grained structure: the different
-;; actions should be isolated and `parsebib--parse-bib-value' needs to know
-;; which ones it should apply. That would alloy the calling function
-;; (mostly `parsebib--parse-bibtex-field') to specify exactly which
-;; post-processing to apply.
-;;
-;; A nice way to do this would be to pass a list of functions to
-;; `parsebib--parse-bib-value', but that's complicated because of the fact
-;; that the functions would have different requirements. At least the
-;; function that expands @String abbreviations needs the @String
-;; definitions as an additional argument. We may be able to use
-;; `apply-partially', though, to make that work.
-
-(defun parsebib--parse-bib-value (limit &optional strings replace-TeX)
-  "Parse value at point.
+(defun parsebib--parse-bib-value (limit &optional post-processors)
+  "Parse the field value at point.
 A value is either a field value or a @String expansion.  Return
 the value as a string.  No parsing is done beyond LIMIT, but note
 that parsing may stop well before LIMIT.
 
-STRINGS, if non-nil, is a hash table of @String definitions.
-@String abbrevs in the value to be parsed are then replaced with
-their expansions.  Additionally, newlines in field values and
-braces or double quotes around field values are removed.
+A field value is a sequence of quoted parts (enclosed in braces
+or double quotes), numbers, and @String abbreviations,
+concatenated using hash characters '#'.  This function first
+reads the value as a list of parts in reverse order: the value
+\"jan # 1966\" is read as the list `(\"1966\" \"jan\")'.  The
+final return value is always a single string, however, created by
+reversing the list and concatenating the parts.
 
-REPLACE-TEX indicates whether TeX markup should be replaced with
-ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details."
-  (let (res)
+POST-PROCESSORS is a list of functions to be applied to the value
+being read before returning it.  These functions should take a
+single argument, either a string or a list of strings, and they
+should return the processed string or a list of processed
+strings.  If they return a list of strings, they should keep the
+order of elements intact.  It is allowed for a function to take a
+list of strings and return a single string. In this case, the
+function should make sure to reverse the elements before
+concatenating them.
+
+If the final function in POST-PROCESSING yields a list of
+strings, they are reversed and concatenated.  If it yields a
+single string, it is returned without further alterations."
+  (let (components)
     (while (and (< (point) limit)
                 (not (looking-at-p ",")))
       (cond
        ((looking-at-p "[{\"]")
         (let ((beg (point)))
           (parsebib--match-delim-forward)
-          (push (buffer-substring-no-properties beg (point)) res)))
+          (push (buffer-substring-no-properties beg (point)) components)))
        ((looking-at parsebib--bibtex-identifier)
-        (push (buffer-substring-no-properties (point) (match-end 0)) res)
+        (push (buffer-substring-no-properties (point) (match-end 0)) components)
         (goto-char (match-end 0)))
        ((looking-at "[[:space:]]*#[[:space:]]*")
         (goto-char (match-end 0)))
        (t (forward-char 1)))) ; So as not to get stuck in an infinite loop.
-    (setq res (if strings
-                  (string-join (parsebib--expand-strings (nreverse res) strings))
-                (string-join (nreverse res) " # ")))
-    (if replace-TeX
-        (parsebib-clean-TeX-markup res)
-      res)))
+    (if post-processors
+        (let ((res components))
+          (dolist (fn post-processors res)
+            (setq res (funcall fn res)))
+          (if (listp res)
+              (string-join (nreverse res) " ")
+            res))
+      (string-join (nreverse components) " # "))))
 
-;;;;;;;;;;;;;;;;;;;;;
-;; Expanding stuff ;;
-;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Post-processing stuff ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun parsebib--expand-strings (strings abbrevs)
+(defvar parsebib-postprocessing-excluded-fields '("file"
+                                                  "url"
+                                                  "doi")
+  "List of fields that should not be post-processed.")
+
+(defun parsebib--expand-strings (abbrevs strings)
   "Expand strings in STRINGS using expansions in ABBREVS.
-STRINGS is a list of strings.  If a string in STRINGS has an
-expansion in hash table ABBREVS, replace it with its expansion.
-Otherwise, if the string is enclosed in braces {} or double
-quotes \"\", remove the delimiters.  In addition, newlines, tabs
-and form feeds in the string are replaced with spaces."
-  (mapcar (lambda (str)
-            (setq str (replace-regexp-in-string "[\t\n\f]]+" " " str))
-            (cond
-             ((gethash str abbrevs))
-             ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
-              (match-string 1 str))
-             (t str)))
-          strings))
+STRINGS is either a string or a list of strings.  If a string in
+STRINGS has an expansion in hash table ABBREVS, replace it with
+its expansion.  If STRINGS is a list, the processed strings are
+concatenated into a single string.  Return value is always a
+single string."
+  (cl-flet ((expand-string (str)
+              (or (gethash str abbrevs)
+                  str)))
+    (if (listp strings)
+        (mapcar #'expand-string strings)
+      (expand-string strings))))
+
+(defun parsebib--unquote (strings)
+  "Unquote strings in STRINGS.
+STRINGS is either a string or a list of strings.  Remove the
+double quotes or braces surrounding STRINGS or the elements of
+STRINGS and return the result."
+  (cl-flet ((unquote (str)
+              (if (string-match-p "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
+                  (substring str 1 -1)
+                str)))
+    (if (listp strings)
+        (mapcar #'unquote strings)
+      (unquote strings))))
+
+(defun parsebib--collapse-whitespace (strings)
+  "Collapse whitespace in STRINGS.
+STRINGS is either a string or a list of strings.  Return value is
+the modified version of STRINGS."
+  (cl-flet ((collapse-whitespace (str)
+              (replace-regexp-in-string "[\t\n\f[:space:]]+" " " str)))
+    (if (listp strings)
+        (mapcar #'collapse-whitespace strings)
+      (collapse-whitespace strings))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Resolving cross-references ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib-expand-xrefs (entries inheritance)
   "Expand cross-referencing items in ENTRIES.
@@ -714,7 +700,10 @@ expansion."
       (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
       (let ((abbr (match-string-no-properties 1)))
         (when (and abbr (> (length abbr) 0))            ; If we found an abbrev.
-          (let ((expansion (parsebib--parse-bib-value limit strings)))
+          (let ((expansion (parsebib--parse-bib-value
+                            limit
+                            (if strings
+                                (list (apply-partially #'parsebib--expand-strings strings))))))
             (goto-char limit)
             (cons abbr expansion)))))))
 
@@ -803,6 +792,21 @@ ASCII/Unicode characters.  See the variable
               (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-string fields))) fields))
           (nreverse fields))))))
 
+(defun parsebib--list-postprocessors-for-field (field strings replace-TeX)
+  "Return a list of post-processors for FIELD.
+Which post-processors to select depends on STRINGS and REPLACE-TEX."
+  (unless (not (or strings replace-TeX))
+    (let (processors)
+      (when (not (member-ignore-case field parsebib-postprocessing-excluded-fields))
+        (when replace-TeX
+          (push #'parsebib--TeX-clean-markup processors))
+        (when strings
+          (push #'parsebib--collapse-whitespace processors)
+          (push (apply-partially #'parsebib--expand-strings strings) processors)))
+      (when strings
+        (push #'parsebib--unquote processors))
+      (nreverse processors))))
+
 (defun parsebib--parse-bibtex-field (limit &optional strings fields replace-TeX)
   "Parse the field starting at point.
 Do not search beyond LIMIT (a buffer position).  Return a
@@ -821,17 +825,16 @@ REPLACE-TEX indicates whether TeX markup should be replaced with
 ASCII/Unicode characters.  See the variable
 `parsebib-TeX-markup-replace-alist' for details."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; Move to the first char of the field name.
-  (unless (>= (point) limit)                      ; If we haven't reached the end of the entry.
+  (unless (>= (point) limit)  ; If we haven't reached the end of the entry.
     (let ((beg (point)))
-      (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
-          (let* ((field (buffer-substring-no-properties beg (point)))
-                 (replace-TeX (and replace-TeX
-                                   (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields)))))
-            (if (or (not fields)
-                    (member-ignore-case field fields))
-                (cons field (parsebib--parse-bib-value limit strings replace-TeX))
-              (parsebib--parse-bib-value limit) ; Skip over the field value.
-              :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
+      (when (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
+        (let ((field (buffer-substring-no-properties beg (point))))
+          (if (or (not fields)
+                  (member-ignore-case field fields))
+              (let ((post-processors (parsebib--list-postprocessors-for-field field strings replace-TeX)))
+                (cons field (parsebib--parse-bib-value limit post-processors)))
+            (parsebib--parse-bib-value limit) ; Skip over the field value.
+            :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; High-level BibTeX/biblatex API ;;
