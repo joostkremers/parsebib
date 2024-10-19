@@ -448,4 +448,27 @@
                           nil nil #'equal)))
            "/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf")))
 
+;; Test if cross-references are resolved.
+(ert-deftest parsebib-test-parse-bib-buffer-crossreferences ()
+  (should (equal
+           (with-temp-buffer
+             (insert
+              "@InCollection{Zubizarreta2016,\n"
+              "	keywords = {Nuclear Stress Rule},\n"
+              "	file = {z/Zubizarreta2016.pdf},\n"
+              "	title = {Information Structure and Nuclear Stress},\n"
+              "	author = {Zubizarreta, Maria Luisa},\n"
+              "	crossref = {Fery:Ishihara2016}}\n"
+              "\n"
+              "@Collection{Fery:Ishihara2016,\n"
+              "	doi = {10.1093/oxfordhb/9780199642670.001.0001},\n"
+              "	publisher = OUP,\n"
+              "	year = {2016},\n"
+              "	title = {The {Oxford} Handbook of Information Structure},\n"
+              "	editor = {Féry, Caroline and Ishihara, Shinichiro}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t :inheritance 'biblatex)))
+               (alist-get "year" (gethash "Zubizarreta2016" (car results))
+                          nil nil #'equal)))
+           "2016")))
+
 ;;; parsebib-test.el ends here
