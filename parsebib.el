@@ -1290,19 +1290,15 @@ returned, it is modified in place and can therefore be used to
 collect the @String definitions in the files being parsed.
 
 If DISPLAY is non-nil, field values are returned in a way that is
-suitable for display: in `.bib' files, @String abbreviations are
-expanded, in `.json' files, values that are not strings are
-converted to strings.  Furthermore, sequences of white space
-characters (including newlines) are reduced to a single space.
-
-Specifically, setting DISPLAY means setting the arguments
-EXPAND-STRINGS and INHERITANCES in the function
-`parsebib-parse-bib-buffer' and setting STRINGIFY and YEAR-ONLY
-in the function `parsebib-parse-json-buffer'.  DISPLAY is simply
-passed on to these arguments, which means that it can be set to
-anything that INHERITANCES in `parsebib-parse-bib-buffer'
-accepts.  (The other arguments only distinguish between nil and
-non-nil.) Note that DISPLAY defaults to t.
+suitable for display.  Specifically, setting DISPLAY means setting
+the arguments EXPAND-STRINGS, INHERITANCES and REPLACE-TEX in the
+function `parsebib-parse-bib-buffer' and setting STRINGIFY and
+YEAR-ONLY in the function `parsebib-parse-json-buffer'.  DISPLAY
+is simply passed on to these arguments, which means that it can
+be set to anything that INHERITANCES in
+`parsebib-parse-bib-buffer' accepts.  (The other arguments only
+distinguish between nil and non-nil.) Note that DISPLAY defaults
+to t.
 
 FIELDS is a list of the field names to be read and included in
 the result.  Fields not in the list are ignored.  Note that field
