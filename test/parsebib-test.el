@@ -327,4 +327,97 @@
   ;; Braces not part of a command should be removed.
   (should (equal (parsebib-clean-TeX-markup "The {UN} should be all-caps.") "The UN should be all-caps.")))
 
+;;; Test for reading the .bib file for display.
+
+(ert-deftest parsebib-test-expand-strings ()
+  (should (equal (let ((h #s(hash-table test equal data ("MGrt" "Mouton De Gruyter"
+                                                         "OTS" "Utrecht School of Linguistics UiL-OTS")))
+                       (s "MGrt"))
+                   (parsebib--expand-strings h s))
+                 "Mouton De Gruyter"))
+  (should (equal (let ((h #s(hash-table test equal data ("MGrt" "Mouton De Gruyter"
+                                                         "OTS" "Utrecht School of Linguistics UiL-OTS")))
+                       (s '("MGrt" "OTS")))
+                   (parsebib--expand-strings h s))
+                 (list "Mouton De Gruyter" "Utrecht School of Linguistics UiL-OTS"))))
+
+(ert-deftest parsebib-test-collapse-whitespace ()
+  (should (equal (let ((s "Hello,\n   World!"))
+                   (parsebib--collapse-whitespace s))
+                 "Hello, World!"))
+  (should (equal (let ((s '("Hello,\n   World!" "Good day, \t\f Sunshine!")))
+                   (parsebib--collapse-whitespace s))
+                 (list "Hello, World!" "Good day, Sunshine!"))))
+
+(ert-deftest parsebib-test-unquote ()
+  (should (equal (let ((s "\"Noun Phrase in the Generative Perspective\""))
+                   (parsebib--unquote s))
+                 "Noun Phrase in the Generative Perspective"))
+  (should (equal (let ((s '("\"Noun Phrase in the Generative Perspective\"" "{Berlin: Mouton de Gruyter}" )))
+                   (parsebib--unquote s))
+                 (list "Noun Phrase in the Generative Perspective" "Berlin: Mouton de Gruyter"))))
+
+(ert-deftest parsebib-test-parse-bib-buffer ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
+                     "\n"
+                     "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "publisher" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
+                          nil nil #'equal)))
+           "Berlin: Mouton de Gruyter"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
+                     "\n"
+                     "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "file" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
+                          nil nil #'equal)))
+           "a/Alexiadou_Haegeman_Stavrou2007.pdf"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@Article{Broekhuis:Cornips2012,\n"
+                     "	doi = {10.1515/ling-2012-0039},\n"
+                     "	file = {b/Broekhuis_Cornips2012.pdf},\n"
+                     "	pages = {1205-1249},\n"
+                     "	volume = {50},\n"
+                     "	number = {6},\n"
+                     "	date = {2012},\n"
+                     "	journaltitle = {Linguistics},\n"
+                     "	title = {The Verb \\textit{krijgen} `to get' as an Undative Verb},\n"
+                     "	author = {Broekhuis, Hans and Cornips, Leonie},\n"
+                     "	timestamp = {2019-01-16 23:38:31 (CET)}}\n")
+             (let ((results (parsebib-parse-bib-buffer :replace-TeX t)))
+               (alist-get "title" (gethash "Broekhuis:Cornips2012" (car results))
+                          nil nil #'equal)))
+           #("The Verb krijgen ‘to get’ as an Undative Verb" 9 16 (face italic))))
+  (should (equal
+           (with-temp-buffer
+             (insert
+              "@inproceedings{ahnIdentifyingCPUBottlenecks,\n"
+              "  title = {Identifying {{On-}}/{{Off-CPU Bottlenecks Together}} with {{Blocked Samples}} {\textbar} {{USENIX}}},\n"
+              "  shorttitle = {{{BCOZ}}},\n"
+              "  author = {Ahn, Minwoo and Han, Jeongmin and Kwon, Youngjin and Jeong, Jinkyu},\n"
+              "  urldate = {2024-10-09},\n"
+              "  langid = {english},\n"
+              "  file = {/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "file" (gethash "ahnIdentifyingCPUBottlenecks" (car results))
+                          nil nil #'equal)))
+           "/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf")))
+
 ;;; parsebib-test.el ends here
