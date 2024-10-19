@@ -1029,7 +1029,8 @@ ASCII/Unicode characters.  See the variable
                  (let ((entry (parsebib-read-entry item nil (if expand-strings strings) fields replace-TeX)))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
-      (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
+      (when inheritance
+        (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
       (list entries strings (nreverse preambles) (nreverse comments) dialect))))
 
 ;;;;;;;;;;;;;;;;;;
