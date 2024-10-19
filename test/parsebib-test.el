@@ -358,6 +358,7 @@
                  (list "Noun Phrase in the Generative Perspective" "Berlin: Mouton de Gruyter"))))
 
 (ert-deftest parsebib-test-parse-bib-buffer ()
+  ;; Test if @String abbreviations are expanded.
   (should (equal
            (with-temp-buffer
              (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
@@ -373,6 +374,7 @@
                (alist-get "publisher" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
                           nil nil #'equal)))
            "Berlin: Mouton de Gruyter"))
+  ;; Test if braces around the `file' field are removed.
   (should (equal
            (with-temp-buffer
              (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
@@ -388,6 +390,7 @@
                (alist-get "file" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
                           nil nil #'equal)))
            "a/Alexiadou_Haegeman_Stavrou2007.pdf"))
+  ;; Test if TeX markup is handled.
   (should (equal
            (with-temp-buffer
              (insert "@Article{Broekhuis:Cornips2012,\n"
@@ -405,6 +408,7 @@
                (alist-get "title" (gethash "Broekhuis:Cornips2012" (car results))
                           nil nil #'equal)))
            #("The Verb krijgen ‘to get’ as an Undative Verb" 9 16 (face italic))))
+  ;; Test if sequences of spaces in file names are retained, even if @strings are expanded.
   (should (equal
            (with-temp-buffer
              (insert
