@@ -413,6 +413,24 @@
                           nil nil #'equal)))
            #("The Verb krijgen ‘to get’ as an Undative Verb" 9 16 (face italic)))))
 
+;; Test if white space is collapsed.
+(ert-deftest parsebib-test-parse-bib-buffer-collapse-whitespace ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
+                     "\n"
+                     "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase  in the \n  Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "title" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
+                          nil nil #'equal)))
+           "Noun Phrase in the Generative Perspective")))
+
 ;; Test if sequences of spaces in file names are retained, even if @strings are expanded.
 (ert-deftest parsebib-test-parse-bib-buffer-dont-collapse-whitespace-in-file-field ()
   (should (equal
