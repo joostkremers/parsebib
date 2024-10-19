@@ -179,15 +179,19 @@ target field is set to the symbol `none'.")
 (defconst parsebib--key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
-(defun parsebib--convert-tex-italics (str)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Prettifying TeX markup ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun parsebib--TeX-convert-italics (str)
   "Return STR with face property `italic'."
   (propertize str 'face 'italic))
 
-(defun parsebib--convert-tex-bold (str)
+(defun parsebib--TeX-convert-bold (str)
   "Return STR with face property `bold'."
   (propertize str 'face 'bold))
 
-(defun parsebib--convert-tex-small-caps (str)
+(defun parsebib--TeX-convert-small-caps (str)
   "Return STR capitalised."
   (upcase str))
 
@@ -235,10 +239,10 @@ target field is set to the symbol `none'.")
     ("i" . "\N{LATIN SMALL LETTER DOTLESS I}")
     ("j" . "\N{LATIN SMALL LETTER DOTLESS J}")
     ;; Formatting Commands
-    ("textit" . parsebib--convert-tex-italics)
-    ("emph"   . parsebib--convert-tex-italics)
-    ("textbf" . parsebib--convert-tex-bold)
-    ("textsc" . parsebib--convert-tex-small-caps))
+    ("textit" . parsebib--TeX-convert-italics)
+    ("emph"   . parsebib--TeX-convert-italics)
+    ("textbf" . parsebib--TeX-convert-bold)
+    ("textsc" . parsebib--TeX-convert-small-caps))
   "An alist of <command>-<replacement> pairs for LaTeX commands.
 <command> is the name of a TeX or LaTeX command (without
 backslash), <replacement> is the string with which it is
@@ -312,14 +316,14 @@ following code will ensure that <literal> gets replaced with
 <replacement>.
 
   (cl-callf (lambda (regex) (rx (or <literal> (regexp regex))))
-     (alist-get (quote parsebib--replace-literal)
+     (alist-get (quote parsebib--TeX-replace-literal)
                 parsebib-TeX-markup-replacement-alist))
 
 See `parsebib-TeX-markup-replacement-alist' and the function
 `parsebib-clean-TeX-markup' to see how this variable is used.")
 
 (defvar parsebib-TeX-markup-replacement-alist
-  `((parsebib--replace-command-or-accent
+  `((parsebib--TeX-replace-command-or-accent
      ;; This regexp matches any latex command i.e. anything that
      ;; starts with a backslash. The name of the command which
      ;; is either a string of alphabetic characters or a single
@@ -336,7 +340,7 @@ See `parsebib-TeX-markup-replacement-alist' and the function
           (: (* blank) (opt (or (: (* (: "[" (* (not (any "]"))) "]"))
                                  "{" (group-n 2 (0+ (not (any "}")))) (opt "}"))
                                 (group-n 3 letter))))))
-    (parsebib--replace-literal
+    (parsebib--TeX-replace-literal
      . ,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
                            (1+ blank)))))
   "Alist of replacements and strings for TeX markup.
@@ -353,7 +357,7 @@ For the common cases of replacing a LaTeX command or a literal
 it is faster to use `parsebib-TeX-command-replacement-alist'
 and `parsebib-TeX-literal-replacement-alist' respectively.")
 
-(defun parsebib--replace-command-or-accent (string)
+(defun parsebib--TeX-replace-command-or-accent (string)
   "Return the replacement text for the command or accent matched by STRING."
   (let* ((cmd (match-string 1 string))
          ;; bar is the argument in braces.
@@ -380,13 +384,13 @@ and `parsebib-TeX-literal-replacement-alist' respectively.")
      ;; Otherwise clean any optional arguments by discarding them.
      (t (replace-regexp-in-string (rx "[" (* (not (any "]"))) "]") "" string t t)))))
 
-(defun parsebib--replace-literal (string)
+(defun parsebib--TeX-replace-literal (string)
   "Look up the replacement text for literal STRING."
   (or (alist-get string parsebib-TeX-literal-replacement-alist nil nil #'equal)
       " "))
 
-(defun parsebib-clean-TeX-markup (string)
-  "Return STRING without TeX markup.
+(defun parsebib-clean-TeX-markup (strings)
+  "Return STRINGS without TeX markup.
 Any substring matching the car of a cell in
 `parsebib-TeX-markup-replace-alist' is replaced with the
 corresponding cdr (if the cdr is a string), or with the result of
@@ -799,7 +803,7 @@ Which post-processors to select depends on STRINGS and REPLACE-TEX."
     (let (processors)
       (when (not (member-ignore-case field parsebib-postprocessing-excluded-fields))
         (when replace-TeX
-          (push #'parsebib--TeX-clean-markup processors))
+          (push #'parsebib-clean-TeX-markup processors))
         (when strings
           (push #'parsebib--collapse-whitespace processors)
           (push (apply-partially #'parsebib--expand-strings strings) processors)))
