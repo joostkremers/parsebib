@@ -62,7 +62,7 @@ If you use this option and also want to resolve cross-references, you need to in
 The higher-level API consists of functions that read and return all items of a specific type in the current buffer. They do not move point. Note that the arguments in these functions (except in `parsebib-expand-xrefs`) are keyword arguments.
 
 
-#### `parsebib-collect-bib-entries (&key entries strings inheritance fields)` ####
+#### `parsebib-collect-bib-entries (&key entries strings inheritance fields replace-TeX)` ####
 
 Collect all entries in the current buffer and return them as a hash table, where the keys correspond to the BibTeX keys and the values are alists consisting of `(<field> . <value>)` pairs of the relevant entry. In this alist, the BibTeX key and the entry type are stored under `=key=` and `=type=`, respectively. Note that both `<field>` and `<value>` are strings. 
 
@@ -73,6 +73,8 @@ If the argument `strings` is present, `@String` abbreviations are expanded. `str
 If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer *above* the current entry, and also against the entries in the hash table `entries`.
 
 The argument `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive.
+
+If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. This variable can be `let`-bound around calls to the parsing functions, but note that its value is construed on the basis of the variables  `parsebib-TeX-command-replacement-alist`, `parsebib-TeX-accent-replacement-alist` or `parsebib-TeX-literal-replacement-alist`, so you may want to customise those instead. See their doc strings and the doc string of `parsebib-TeX-markup-replacement-alist` for details.
 
 
 #### `parsebib-collect-strings (&key strings expand-strings)` ####
@@ -109,7 +111,7 @@ If the arguments `entries` and `strings` are present, they should be hash tables
 
 The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and the arguments `inheritance` and `fields` function as the same-name arguments in `parsebib-collect-bib-entries`.
 
-If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. This variable can be `let`-bound around calls to the parsing functions, but note that its value is construed on the basis of the variables  `parsebib-TeX-command-relacement-alist`, `parsebib-TeX-accent-replacement-alist` or `parsebib-TeX-literal-replacement-alist`, so you may want to customise those instead. See their doc strings and the doc string of `parsebib-TeX-markup-replacement-alist` for details.
+If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. See `parsebib-collect-bib-entries` for details.
 
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 

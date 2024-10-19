@@ -891,7 +891,7 @@ STRINGS."
                (puthash (car string) (cdr string) strings)))
     strings))
 
-(cl-defun parsebib-collect-bib-entries (&key entries strings inheritance fields)
+(cl-defun parsebib-collect-bib-entries (&key entries strings inheritance fields replace-TeX)
   "Collect all BibTeX / biblatex entries in the current buffer.
 Return value is a hash table containing the entries.  If ENTRIES
 is a hash table with test function `equal', it is used to store
@@ -921,7 +921,11 @@ FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
 except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
-FIELDS is nil, all fields are returned."
+FIELDS is nil, all fields are returned.
+
+REPLACE-TEX indicates whether TeX markup should be replaced with
+ASCII/Unicode characters.  See the variable
+`parsebib-TeX-markup-replace-alist' for details."
   (or (and (hash-table-p entries)
            (eq 'equal (hash-table-test entries)))
       (setq entries (make-hash-table :test #'equal)))
@@ -935,7 +939,7 @@ FIELDS is nil, all fields are returned."
              for entry-type = (parsebib-find-next-item)
              while entry-type do
              (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry entry-type nil strings fields))
+               (setq entry (parsebib-read-entry entry-type nil strings fields replace-TeX))
                (if entry
                    (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
     (when inheritance
