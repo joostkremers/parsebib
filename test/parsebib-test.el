@@ -118,7 +118,7 @@
 
 ;;; Tests for `parsebib-clean-TeX-markup'
 
-(ert-deftest parsebib-clean-TeX-markup-dashes ()
+(ert-deftest parsebib-test-clean-TeX-markup-dashes ()
   (should (equal (parsebib-clean-TeX-markup "---") "—"))
   (should (equal (parsebib-clean-TeX-markup "\\textemdash") "—"))
   (should (equal (parsebib-clean-TeX-markup "\\textemdash and") "—and"))
@@ -132,7 +132,7 @@
   (should (equal (parsebib-clean-TeX-markup "\\textendash") "–"))
   (should (equal (parsebib-clean-TeX-markup "\\textendash{}") "–")))
 
-(ert-deftest parsebib-clean-TeX-markup-math-and-text-mode-commands ()
+(ert-deftest parsebib-test-clean-TeX-markup-math-and-text-mode-commands ()
   (should (equal (parsebib-clean-TeX-markup "\\ddag{} \\textdaggerdbl") "‡ ‡"))
   (should (equal (parsebib-clean-TeX-markup "10\\textpertenthousand") "10‱"))
   (should (equal (parsebib-clean-TeX-markup "200\\textperthousand.") "200‰."))
@@ -143,7 +143,7 @@
   (should (equal (parsebib-clean-TeX-markup "\\ldots{} [\\dots] \\textellipsis and")
                  "… […] …and")))
 
-(ert-deftest parsebib-clean-TeX-markup-nonletter-diacritics-without-braces ()
+(ert-deftest parsebib-test-clean-TeX-markup-nonletter-diacritics-without-braces ()
   ;; No space is needed after a nonletter diacritic commands.
   (should (equal (parsebib-clean-TeX-markup "\\\"a") "a\N{COMBINING DIAERESIS}"))
   (should (equal (parsebib-clean-TeX-markup "\\'a")  "a\N{COMBINING ACUTE ACCENT}"))
@@ -157,7 +157,7 @@
   (should (equal (parsebib-clean-TeX-markup "\\' a")  "a\N{COMBINING ACUTE ACCENT}"))
   (should (equal (parsebib-clean-TeX-markup "\\'  a")  "a\N{COMBINING ACUTE ACCENT}")))
 
-(ert-deftest parsebib-clean-TeX-markup-letter-diacritics-without-braces ()
+(ert-deftest parsebib-test-clean-TeX-markup-letter-diacritics-without-braces ()
   ;; Diacritic commands that consist of a single letter require a space.
   (should (equal (parsebib-clean-TeX-markup "\\b a") "a\N{COMBINING MACRON BELOW}"))
   (should (equal (parsebib-clean-TeX-markup "\\c c") "c\N{COMBINING CEDILLA}"))
@@ -180,7 +180,7 @@
   ;; unchanged.
   (should (equal (parsebib-clean-TeX-markup "before \\ba after") "before \\ba after")))
 
-(ert-deftest parsebib-clean-TeX-markup-diacritics-with-braces ()
+(ert-deftest parsebib-test-clean-TeX-markup-diacritics-with-braces ()
   ;; Diacritic commands may use braces to mark the argument.
   (should (equal (parsebib-clean-TeX-markup "\\\"{a}") "a\N{COMBINING DIAERESIS}"))
   (should (equal (parsebib-clean-TeX-markup "\\'{a}")  "a\N{COMBINING ACUTE ACCENT}"))
@@ -207,7 +207,7 @@
   (should (equal (parsebib-clean-TeX-markup "\\' {a}")  "a\N{COMBINING ACUTE ACCENT}"))
   (should (equal (parsebib-clean-TeX-markup "\\'  {a}")  "a\N{COMBINING ACUTE ACCENT}")))
 
-(ert-deftest parsebib-clean-TeX-markup-escapable-characters ()
+(ert-deftest parsebib-test-clean-TeX-markup-escapable-characters ()
   (should (equal (parsebib-clean-TeX-markup "percent: \\%")
                  "percent: %"))
   (should (equal (parsebib-clean-TeX-markup "ampersand: \\&")
@@ -217,40 +217,40 @@
   (should (equal (parsebib-clean-TeX-markup "dollar: \\$")
                  "dollar: $")))
 
-(ert-deftest parsebib-clean-TeX-markup-quotes ()
+(ert-deftest parsebib-test-clean-TeX-markup-quotes ()
   (should (equal (parsebib-clean-TeX-markup "``double'' quotes") "\N{LEFT DOUBLE QUOTATION MARK}double\N{RIGHT DOUBLE QUOTATION MARK} quotes"))
   (should (equal (parsebib-clean-TeX-markup "`single' quotes") "\N{LEFT SINGLE QUOTATION MARK}single\N{RIGHT SINGLE QUOTATION MARK} quotes")))
 
-(ert-deftest parsebib-clean-TeX-markup-textit ()
+(ert-deftest parsebib-test-clean-TeX-markup-textit ()
   (should (equal-including-properties
            (parsebib-clean-TeX-markup "The verb \\textit{krijgen} as an undative verb.")
            #("The verb krijgen as an undative verb." 9 16
              (face italic)))))
 
-(ert-deftest parsebib-clean-TeX-markup-emph ()
+(ert-deftest parsebib-test-clean-TeX-markup-emph ()
   (should (equal-including-properties
            (parsebib-clean-TeX-markup "The verb \\emph{krijgen} as an undative verb.")
            #("The verb krijgen as an undative verb." 9 16
              (face italic)))))
 
-(ert-deftest parsebib-clean-TeX-markup-textbf ()
+(ert-deftest parsebib-test-clean-TeX-markup-textbf ()
   (should (equal-including-properties
            (parsebib-clean-TeX-markup "The verb \\textbf{krijgen} as an undative verb.")
            #("The verb krijgen as an undative verb." 9 16
              (face bold)))))
 
-(ert-deftest parsebib-clean-TeX-markup-textsc ()
+(ert-deftest parsebib-test-clean-TeX-markup-textsc ()
   (should (equal
            (parsebib-clean-TeX-markup "The verb \\textsc{krijgen} as an undative verb.")
            "The verb KRIJGEN as an undative verb.")))
 
-(ert-deftest parsebib-clean-TeX-markup-nested-macros ()
+(ert-deftest parsebib-test-clean-TeX-markup-nested-macros ()
   (should (equal (parsebib-clean-TeX-markup "\\textit{\\foo{bar}}")
                  #("bar" 0 3 (face italic))))
   (should (equal (parsebib-clean-TeX-markup "\\textit{\\foo}}")
                  #("\\foo" 0 4 (face italic)))))
 
-(ert-deftest parsebib-clean-TeX-markup-nonascii-letters-with-braces ()
+(ert-deftest parsebib-test-clean-TeX-markup-nonascii-letters-with-braces ()
   ;; The braces should be removed and the space after it retained.
   (should (equal (parsebib-clean-TeX-markup "\\AA{} and") "\N{LATIN CAPITAL LETTER A WITH RING ABOVE} and"))
   (should (equal (parsebib-clean-TeX-markup "\\AE{} and") "\N{LATIN CAPITAL LETTER AE} and"))
@@ -279,7 +279,7 @@
   (should (equal (parsebib-clean-TeX-markup "\\AA{}  and")  "\N{LATIN CAPITAL LETTER A WITH RING ABOVE} and"))
   (should (equal (parsebib-clean-TeX-markup "\\AA{}   and") "\N{LATIN CAPITAL LETTER A WITH RING ABOVE} and")))
 
-(ert-deftest parsebib-clean-TeX-markup-nonascii-letters-without-braces ()
+(ert-deftest parsebib-test-clean-TeX-markup-nonascii-letters-without-braces ()
   ;; The space should be removed.
   (should (equal (parsebib-clean-TeX-markup "\\AA n") "\N{LATIN CAPITAL LETTER A WITH RING ABOVE}n"))
   (should (equal (parsebib-clean-TeX-markup "\\AE n") "\N{LATIN CAPITAL LETTER AE}n"))
@@ -310,7 +310,7 @@
   ;; If there is no space, treat it as an unknown command.
   (should (equal (parsebib-clean-TeX-markup "\\AAn")  "\\AAn")))
 
-(ert-deftest parsebib-clean-TeX-markup-other-commands ()
+(ert-deftest parsebib-test-clean-TeX-markup-other-commands ()
   ;; Do not change commands with no arguments.
   (should (equal (parsebib-clean-TeX-markup "\\LaTeX and") "\\LaTeX and"))
   ;; Commands with an empty set of braces should remain, the braces should be removed.
@@ -323,7 +323,7 @@
   (should (equal (parsebib-clean-TeX-markup "\\foo[bar][baz]{boo} and") "boo and"))
   (should (equal (parsebib-clean-TeX-markup "\\foo[bar][baz]{} and") "\\foo and")))
 
-(ert-deftest parsebib-clean-TeX-markup-braces ()
+(ert-deftest parsebib-test-clean-TeX-markup-braces ()
   ;; Braces not part of a command should be removed.
   (should (equal (parsebib-clean-TeX-markup "The {UN} should be all-caps.") "The UN should be all-caps.")))
 
