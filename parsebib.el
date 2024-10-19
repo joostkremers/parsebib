@@ -708,7 +708,8 @@ expansion."
           (let ((expansion (parsebib--parse-bib-value
                             limit
                             (if strings
-                                (list (apply-partially #'parsebib--expand-strings strings))))))
+                                (list (apply-partially #'parsebib--expand-strings strings)
+                                      #'parsebib--unquote)))))
             (goto-char limit)
             (cons abbr expansion)))))))
 
