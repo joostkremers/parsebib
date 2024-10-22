@@ -395,8 +395,7 @@ and `parsebib-TeX-literal-replacement-alist' respectively.")
 Any substring matching the car of a cell in
 `parsebib-TeX-markup-replace-alist' is replaced with the
 corresponding cdr (if the cdr is a string), or with the result of
-calling the cdr on the match (if it is a function).  This is done
-with `replace-regexp-in-string', which see for details."
+calling the cdr on the match (if it is a function)."
   (let ((case-fold-search nil))
     (cl-loop for (replacement . pattern) in parsebib-TeX-markup-replacement-alist
              do (setq string (replace-regexp-in-string
