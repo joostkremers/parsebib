@@ -511,9 +511,9 @@ single string, it is returned without further alterations."
 ;; Post-processing stuff ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar parsebib-postprocessing-excluded-fields '("file"
-                                                  "url"
-                                                  "doi")
+(defvar parsebib-post-processing-excluded-fields '("file"
+                                                   "url"
+                                                   "doi")
   "List of fields that should not be post-processed.")
 
 (defun parsebib--expand-strings (abbrevs strings)
