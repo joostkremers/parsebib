@@ -353,9 +353,9 @@ For the common cases of replacing a LaTeX command or a literal
 it is faster to use `parsebib-TeX-command-replacement-alist'
 and `parsebib-TeX-literal-replacement-alist' respectively.")
 
-(defvar parsebib-clean-TeX-markup-excluded-fields '("file"
-                                                    "url"
-                                                    "doi")
+(defvar parsebib-postprocessing-excluded-fields '("file"
+                                                  "url"
+                                                  "doi")
   "List of fields that should not be passed to `parsebib-clean-TeX-markup'.")
 
 (defun parsebib--replace-command-or-accent (string)
@@ -772,9 +772,9 @@ ASCII/Unicode characters.  See the variable
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let* ((field (buffer-substring-no-properties beg (point)))
                  (replace-TeX (and replace-TeX
-                                   (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields))))
+                                   (not (member-ignore-case field parsebib-postprocessing-excluded-fields))))
                  (collapse-whitespace (and strings
-                                           (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields)))))
+                                           (not (member-ignore-case field parsebib-postprocessing-excluded-fields)))))
             (if (or (not fields)
                     (member-ignore-case field fields))
                 (cons field (parsebib--parse-bib-value limit strings replace-TeX collapse-whitespace))
@@ -846,7 +846,7 @@ removed), and TeX markup is prettified (see
 `parsebib-clean-TeX-markup' for details).  Note that @String
 expansion, collapsing of whitespace and prettifying TeX markup
 are not applied to fields listed in
-`parsebib-clean-TeX-markup-excluded-fields', but unquoting is.
+`parsebib-postprocessing-excluded-fields', but unquoting is.
 
 If INHERITANCE is non-nil, cross-references in the entries are
 resolved: if the crossref field of an entry points to an entry
@@ -923,7 +923,7 @@ field values are collapsed into a single space and field values
 are unquoted, i.e., the double quotes or braces around them are
 removed.  Note that @String expansion, collapsing of whitespace
 and prettifying TeX markup are not applied to fields listed in
-`parsebib-clean-TeX-markup-excluded-fields', but unquoting is.
+`parsebib-postprocessing-excluded-fields', but unquoting is.
 
 If INHERITANCE is non-nil, cross-references in the entries are
 resolved: if the crossref field of an entry points to an entry
