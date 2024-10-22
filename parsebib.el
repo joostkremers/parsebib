@@ -503,7 +503,7 @@ single string, it is returned without further alterations."
           (dolist (fn post-processors res)
             (setq res (funcall fn res)))
           (if (listp res)
-              (string-join (nreverse res) " ")
+              (string-join (nreverse res))
             res))
       (string-join (nreverse components) " # "))))
 
