@@ -333,9 +333,9 @@ See `parsebib-TeX-markup-replacement-alist' and the function
      ;; because doing it properly requires sexp parsing. It will fail
      ;; for cases like \command{\anothercommand{an arg}some text}.
      . ,(rx "\\" (group-n 1 (or (1+ letter) nonl))
-          (: (* blank) (opt (or (: (* (: "[" (* (not (any "]"))) "]"))
-                                 "{" (group-n 2 (0+ (not (any "}")))) (opt "}"))
-                                (group-n 3 letter))))))
+            (: (* blank) (opt (or (: (* (: "[" (* (not (any "]"))) "]"))
+                                     "{" (group-n 2 (0+ (not (any "}")))) (opt "}"))
+                                  (group-n 3 letter))))))
     (parsebib--replace-literal
      . ,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
                            (1+ blank)))))
