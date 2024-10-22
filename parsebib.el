@@ -531,12 +531,12 @@ a hash table, REPLACE-TEX a boolean value."
     (let ((processors (mapcar (lambda (field)
                                 (list (intern (downcase field)) #'parsebib--unquote))
                               parsebib-post-processing-excluded-fields))
-          (default-processor (append (when replace-TeX
-                                       (list #'parsebib-clean-TeX-markup))
-                                     (when strings
+          (default-processor (append (when strings
                                        (list #'parsebib--collapse-whitespace
                                              (apply-partially #'parsebib--expand-strings strings)))
-                                     (list #'parsebib--unquote))))
+                                     (list #'parsebib--unquote)
+                                     (when replace-TeX
+                                       (list #'parsebib-clean-TeX-markup)))))
       (push (cons '=default= default-processor) processors))))
 
 (defun parsebib--expand-strings (abbrevs strings)
