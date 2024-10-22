@@ -930,18 +930,18 @@ FIELDS is nil, all fields are returned.
 REPLACE-TEX indicates whether TeX markup should be replaced with
 ASCII/Unicode characters.  See the variable
 `parsebib-TeX-markup-replace-alist' for details."
-  (save-excursion
-    (goto-char (point-min))
-    (or (and (hash-table-p entries)
-             (eq (hash-table-test entries) 'equal))
-        (setq entries (make-hash-table :test #'equal)))
-    (or (and (hash-table-p strings)
-             (eq (hash-table-test strings) 'equal))
-        (setq strings (make-hash-table :test #'equal)))
-    (let ((dialect (or (parsebib-find-bibtex-dialect)
-                       bibtex-dialect
-                       'BibTeX))
-          preambles comments)
+  (or (and (hash-table-p entries)
+           (eq (hash-table-test entries) 'equal))
+      (setq entries (make-hash-table :test #'equal)))
+  (or (and (hash-table-p strings)
+           (eq (hash-table-test strings) 'equal))
+      (setq strings (make-hash-table :test #'equal)))
+  (let ((dialect (or (parsebib-find-bibtex-dialect)
+                     bibtex-dialect
+                     'BibTeX))
+        preambles comments)
+    (save-excursion
+      (goto-char (point-min))
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (cond
