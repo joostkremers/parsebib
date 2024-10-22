@@ -5,20 +5,18 @@
 
 `Parsebib` is an Elisp library for reading bibliographic database files. It supports both BibTeX / `biblatex` (`.bib`)  files and CSL-JSON (`.json`) files.
 
-The library provides functions that parse the current buffer. They are intended to be used inside a `with-temp-buffer` combined with `insert-file-contents`, but they can also be used in a buffer visiting a bibliography file, of course.
+The library provides functions that parse the current buffer. They are intended to be used inside a `with-temp-buffer` combined with `insert-file-contents`, but they can also be used in a buffer visiting a bibliography file, of course. Alternatively, the library provides a function `parsebib-parse` that takes a list of files and collects all the bibliographic data in them in. 
 
-The bibliographic data is returned as a hash table. To parse multiple files, you can either insert them all into one temp buffer, or pass the hash table obtained by parsing the first buffer as an argument when parsing the next buffer.
+The data in the bibliography file can be returned in two ways. The first option is for `parsebib` to return the contents of the file accurately. This means that the field values as returned by `parsebib` are literally the field values in the file. This is useful if you need the contents of the `.bib` file literally, e.g., because your application provides the user with the option of modifying the data.
 
-The data in the bibliography file can be returned in two ways. The first option is for `parsebib` to return the contents of the file accurately. This means that the field values as returned by `parsebib` are literally the field values in the file. For various reasons, however, this representation is not ideal if you want to present the content of a bibliography file to the user with the aim of selecting one or more entries.
-
-Therefore, the second option is for `parsebib` to return the field values in such a way that they are suitable for display. For BibTeX / `biblatex` files, this means that `@String` abbreviations are expanded, cross-references are resolved and TeX markup is prettified or removed. For CSL-JSON files, it means that field values that are not strings (notably name and date fields) are converted to strings in a sensible way.
+If you just want to display the bibliographic data, however, e.g., to allow a user to select a reference, you may want to represent the data in a way that is closer to what it would look like in a bibliography. To make this possible, `parsebib` can return the field values in such a way that they are suitable for display. For BibTeX / `biblatex` files, this means that `@String` abbreviations are expanded, cross-references are resolved and TeX markup is prettified or removed. For CSL-JSON files, it means that field values that are not strings (notably name and date fields) are converted to strings in a sensible way.
 
 
 ## BibTeX / `biblatex` vs. CSL-JSON ##
 
 Although both are bibliography file formats, there are obviously differences between BibTeX / `biblatex` on the one hand and CSL-JSON on the other. The entry types and field names are different, and CSL-JSON does not have something similar to `@String` abbreviations or cross-references.
 
-Especially relevant for the purpose of this library is that there are differences in the format of the data returned for the two types of files. The bibliographic data is returned as a hash table. In this hash table, each entry is stored under its entry key (which is the `id` field in CSL-JSON) as an alist of `(<field> . <value>)` pairs. In BibTeX data, `<field>` is a string and field names are case-insensitive, so you may have `"Author"` or `"author"`, and both may occur in a single `.bib` file. Furthermore, `<value>` is always a string.
+Especially relevant for the purpose of this library is that there are differences in the format of the data returned for the two types of files. For both formats, the bibliographic data is returned as a hash table. In this hash table, each entry is stored under its entry key (which is the `id` field in CSL-JSON) as an alist of `(<field> . <value>)` pairs. In BibTeX data, `<field>` is a string and field names are case-insensitive, so you may have `"Author"` or `"author"`, and both may occur in a single `.bib` file. Furthermore, `<value>` is always a string.
 
 In CSL-JSON data, the format of the alist is slightly different: `<field>` is not a string but a symbol and the symbol name is case-sensitive. The CSL-JSON standard describes which field names are lower case (most are) and which are upper case (`ISBN`, `DOI`, etc.) Furthermore, the `<value>` part of the alist items may be a string, a number or a vector, though when parsing a `.json` file, you can have `parsebib` convert all values to strings.
 
@@ -38,13 +36,13 @@ Support for `.bib` files comes in two different APIs, a higher-level one that re
 
 ### Returning entries for display ###
 
-In order to return entries in a way that is suitable for display, `parsebib` can post-process field values while reading the contents of a `.bib` file. This post-processing involves a number of modifications. First, it removes the braces or double quotes around field values, and replaces newlines, tabs and form feeds with spaces.
+In order to return entries in a way that is suitable for display, `parsebib` can post-process field values while reading the contents of a `.bib` file. This post-processing involves a number of modifications. First, it removes the braces or double quotes around field values,  replaces newlines, tabs and form feeds with spaces, and collapses sequences of whitespace characters into a single space.
 
 Furthermore, TeX markup is prettified: LaTeX commands for special characters are replaced with their (Unicode) representations (i.e. `\textdollar` is replaced with $, `\S` with §, `---` with —, etc.), LaTeX commands that have an obligatory argument are replaced with that argument, optional arguments and braces are removed. In addition, the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc., (provided a suitable font is used in Emacs). LaTeX commands that have no obligatory argument, such as `\LaTeX`, are retained.
 
 Post-processing also involves expanding `@String` abbreviations: abbreviations in field values (or `@String` definitions) are replaced with their definition, so that field values are (more or less) shown the way they would appear after processing with BibTeX / `biblatex`.
 
-The `file`, `url` and `doi` fields are excluded from any post-processing, because they don't contain any TeX code or `@String` abbreviations, and because modifying them may actually be harmful (e.g., replacing multiple spaces with a single space in a file name). You can exclude more fields from post-processing by adding them to the variable `parsebib-postprocessing-excluded-fields`.
+The `file`, `url` and `doi` fields are excluded from post-processing, because they usually don't contain any TeX code or `@String` abbreviations, and because modifying them may actually be harmful (e.g., replacing multiple spaces with a single space in a file name). You can exclude more fields from post-processing by adding them to the variable `parsebib-postprocessing-excluded-fields`. (Note that double quotes or braces around the values of these fields *are* removed.)
 
 In addition to this post-processing, `parsebib` can resolve cross-references. This means that if an entry has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
 
@@ -68,7 +66,9 @@ Collect all entries in the current buffer and return them as a hash table, where
 
 The argument `entries` can be used to pass a (possibly non-empty) hash table in which the entries are stored. This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file.
 
-If the argument `strings` is present, `@String` abbreviations are expanded. `strings` should be a hash table of `@String` definitions as returned by `parsebib-collect-strings`.
+If the argument `strings` is present, `@String` abbreviations are expanded. `strings` should be a hash table of `@String` definitions as returned by `parsebib-collect-strings`. In addition, sequences of whitespace (space, tab, newline) are collapsed into a single space, field values are unquoted (i.e., the double quotes or braces around them are removed), and TeX markup is prettified or removed. Note that @String
+expansion, collapsing of whitespace and prettifying TeX markup
+are not applied to fields listed in `parsebib-postprocessing-excluded-fields', but unquoting is.
 
 If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer *above* the current entry, and also against the entries in the hash table `entries`.
 
@@ -114,9 +114,9 @@ If `replace-TeX` in set, (La)TeX markup in field values is replaced with text th
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 
 
-#### `parsebib-clean-TeX-markup-exclude-fields` ####
+#### `parsebib-postprocessing-exclude-fields` ####
 
-This variable is set to a list of fields in which no clean-up of TeX markup should take place when parsing a buffer. To customise this list, you can `let`-bind it around a call to `parsebib-parse-bib-buffer`.
+This variable is set to a list of fields in which no clean-up of TeX markup should take place when parsing a buffer. To customise this list, you can `let`-bind it around a call to `parsebib-parse-bib-buffer`. Its default value is `("file" "url" "doi")`.
 
 
 #### `parsebib-expand-xrefs (entries inheritance)` ####
@@ -138,16 +138,16 @@ All functions here take an optional position argument, which is the position in 
 Find the first BibTeX item following `pos`, where an item is either a BibTeX entry, or a `@Preamble`, `@String`, or `@Comment`. This function returns the item's type as a string, i.e., either `"preamble"`, `"string"`, or `"comment"`, or the entry type. Note that the `@` is *not* part of the returned string. This function moves point into the correct position to start reading the actual contents of the item, which is done by one of the following functions.
 
 
-#### `parsebib-read-entry (type &optional pos strings keep-fields replace-TeX)` ####
+#### `parsebib-read-entry (type &optional pos strings fields replace-TeX)` ####
 #### `parsebib-read-string (&optional pos strings)` ####
 #### `parsebib-read-preamble (&optional pos)` ####
 #### `parsebib-read-comment (&optional pos)` ####
 
 These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` definitions or in field values are expanded. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
 
-`parsebib-read-entry` takes two more optional arguments: `keep-fields` and `replace-TeX`. `keep-fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive. `replace-TeX` is a flag indicating whether TeX markup in field values should be replaced with something that's more suitable for display.
+`parsebib-read-entry` takes two more optional arguments: `fields` and `replace-TeX`. `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive. `replace-TeX` is a flag indicating whether TeX markup in field values should be replaced with something that's more suitable for display.
 
-The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. One of these pairs contains the entry type `=type=`, and one contains the entry key. These have the keys `"=key="` and `"=type="`, respectively.
+The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. One of these pairs contains the entry type, and one contains the entry key. These have the keys `"=type="` and `"=key="`, respectively.
 
 Note that all `parsebib-read*` functions move point to the end of the entry.
 
@@ -156,7 +156,7 @@ The reading functions return `nil` if they do not find the element they should b
 
 #### parsebib-clean-TeX-markup (string) ####
 
-Apply all replacements in `parsebib-TeX-markup-replace-alist` to `string`. Note that this function ignores `parsebib-clean-TeX-markup-exclude-fields`. (After all, it does not even know which field `string` comes from.)
+Apply all replacements in `parsebib-TeX-markup-replace-alist` to `string`. Note that this function ignores the value of `parsebib-postprocessing-exclude-fields`, because it just sees the string itself, not which field `string` comes from. 
 
 
 ## CSL-JSON ##
@@ -179,7 +179,7 @@ The argument `entries` can be used to pass a (possibly non-empty) hash table in 
 
 Some field values in CSL-JSON are not strings. These are primarily name and date fields, which in CSL-JSON are represented as JSON objects. The argument `stringify` determines how they are returned. When `stringify` is set to `nil`, they are returned as alists; with `stringify` set to `t`, they are converted to strings.
 
-The argument `year-only` controls the way dates are converted to strings. If it non-`nil`, only the year part is returned. This argument only takes effect if `stringify` is set to `t`. See below for details.
+The argument `year-only` controls the way dates are converted to strings. If it is non-`nil`, only the year part is returned. This argument only takes effect if `stringify` is set to `t`. See below for details.
 
 The way values are converted to strings can be customised to some extent by the use of certain special variables, discussed below.
 
