@@ -500,7 +500,7 @@ single string, it is returned without further alterations."
        (t (forward-char 1)))) ; So as not to get stuck in an infinite loop.
     (if post-processors
         (let ((res components))
-          (dolist (fn post-processors res)
+          (dolist (fn post-processors)
             (setq res (funcall fn res)))
           (if (listp res)
               (string-join (nreverse res))
