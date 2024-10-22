@@ -516,6 +516,29 @@ single string, it is returned without further alterations."
                                                    "doi")
   "List of fields that should not be post-processed.")
 
+(defun parsebib--list-post-processors (strings replace-TeX)
+  "Return an list of post-processors.
+The return value is an alist, with field names as keys and lists
+of post-processing functions as values.  In addition, a default
+list of functions is included under the key `=default='.  Note
+that keys are (lowercase) symbols.
+
+Which post-processors are added to each list depends on STRINGS
+and REPLACE-TEX, and in addition on the value of the global
+variable `parsebib-post-processing-excluded-fields'.  STRINGS is
+a hash table, REPLACE-TEX a boolean value."
+  (unless (not (or strings replace-TeX))
+    (let ((processors (mapcar (lambda (field)
+                                (list (intern (downcase field)) #'parsebib--unquote))
+                              parsebib-post-processing-excluded-fields))
+          (default-processor (append (when replace-TeX
+                                       (list #'parsebib-clean-TeX-markup))
+                                     (when strings
+                                       (list #'parsebib--collapse-whitespace
+                                             (apply-partially #'parsebib--expand-strings strings)))
+                                     (list #'parsebib--unquote))))
+      (push (cons '=default= default-processor) processors))))
+
 (defun parsebib--expand-strings (abbrevs strings)
   "Expand strings in STRINGS using expansions in ABBREVS.
 STRINGS is either a string or a list of strings.  If a string in
@@ -740,7 +763,7 @@ point."
    into hashid-fields
    finally return (mapconcat #'identity hashid-fields "")))
 
-(defun parsebib-read-entry (type &optional pos strings fields replace-TeX)
+(defun parsebib-read-entry (type &optional pos fields post-processors)
   "Read a BibTeX entry of type TYPE at the line POS is on.
 TYPE should be a string and should not contain the @
 sign.  The return value is the entry as an alist of (<field> .
@@ -757,22 +780,16 @@ POS can be a number or a marker.  It does not have to be at the
 beginning of a line, but the entry must start at the beginning of
 the line POS is on.  If POS is nil, it defaults to point.
 
-ENTRY should not be \"Comment\", \"Preamble\" or \"String\", but
-is otherwise not limited to any set of possible entry types.
-
-If STRINGS is provided, it should be a hash table with string
-abbreviations, which are used to expand abbrevs in the entry's
-fields.
-
 FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
 except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned.
 
-REPLACE-TEX indicates whether TeX markup should be replaced with
-ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details."
+POST-PROCESSORS is a list of functions to be applied to each
+field value.  They are ultimately passed to the function
+`parsebib--parse-bib-value', See that function's doc string for
+details."
   (unless (member-ignore-case type '("comment" "preamble" "string"))
     (when pos (goto-char pos))
     (beginning-of-line)
@@ -789,7 +806,7 @@ ASCII/Unicode characters.  See the variable
                     (buffer-substring-no-properties beg (point)))))
         (or key (setq key "")) ; If no key was found, we pretend it's empty and try to read the entry anyway.
         (skip-chars-forward "^," limit) ; Move to the comma after the entry key.
-        (let ((fields (cl-loop for field = (parsebib--parse-bibtex-field limit strings fields replace-TeX)
+        (let ((fields (cl-loop for field = (parsebib--parse-bibtex-field limit fields post-processors)
                                while field
                                if (consp field) collect field)))
           (push (cons "=type=" type) fields)
@@ -798,28 +815,10 @@ ASCII/Unicode characters.  See the variable
               (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-string fields))) fields))
           (nreverse fields))))))
 
-(defun parsebib--list-postprocessors-for-field (field strings replace-TeX)
-  "Return a list of post-processors for FIELD.
-Which post-processors to select depends on STRINGS and REPLACE-TEX."
-  (unless (not (or strings replace-TeX))
-    (let (processors)
-      (when (not (member-ignore-case field parsebib-postprocessing-excluded-fields))
-        (when replace-TeX
-          (push #'parsebib-clean-TeX-markup processors))
-        (when strings
-          (push #'parsebib--collapse-whitespace processors)
-          (push (apply-partially #'parsebib--expand-strings strings) processors)))
-      (when strings
-        (push #'parsebib--unquote processors))
-      (nreverse processors))))
-
-(defun parsebib--parse-bibtex-field (limit &optional strings fields replace-TeX)
+(defun parsebib--parse-bibtex-field (limit &optional fields post-processors)
   "Parse the field starting at point.
 Do not search beyond LIMIT (a buffer position).  Return a
 cons (FIELD . VALUE), or nil if no field was found.
-
-STRINGS is a hash table with string abbreviations, which are used
-to expand abbrevs in the field's value.
 
 FIELDS is a list of the field names (as strings) to be read and
 included in the result.  Fields not in the list are ignored,
@@ -827,18 +826,20 @@ except \"=key=\" and \"=type=\", which are always included.  Case
 is ignored when comparing fields to the list in FIELDS.  If
 FIELDS is nil, all fields are returned.
 
-REPLACE-TEX indicates whether TeX markup should be replaced with
-ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details."
+POST-PROCESSORS is a list of functions to be applied to each
+field value.  They are passed to the function
+`parsebib--parse-bib-value', See that function's doc string for
+details."
   (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; Move to the first char of the field name.
   (unless (>= (point) limit)  ; If we haven't reached the end of the entry.
     (let ((beg (point)))
       (when (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
-        (let ((field (buffer-substring-no-properties beg (point))))
+        (let* ((field (buffer-substring-no-properties beg (point)))
+               (post-processors (or (alist-get (intern (downcase field)) post-processors)
+                                    (alist-get '=default= post-processors))))
           (if (or (not fields)
                   (member-ignore-case field fields))
-              (let ((post-processors (parsebib--list-postprocessors-for-field field strings replace-TeX)))
-                (cons field (parsebib--parse-bib-value limit post-processors)))
+              (cons field (parsebib--parse-bib-value limit post-processors))
             (parsebib--parse-bib-value limit) ; Skip over the field value.
             :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
 
@@ -933,18 +934,19 @@ ASCII/Unicode characters.  See the variable
       (setq inheritance (or (parsebib-find-bibtex-dialect)
                             bibtex-dialect
                             'BibTeX)))
-  (save-excursion
-    (goto-char (point-min))
-    (cl-loop with entry = nil
-             for entry-type = (parsebib-find-next-item)
-             while entry-type do
-             (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry entry-type nil strings fields replace-TeX))
-               (if entry
-                   (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
-    (when inheritance
-      (parsebib-expand-xrefs entries inheritance))
-    entries))
+  (let ((post-processors (parsebib--list-post-processors strings replace-TeX)))
+    (save-excursion
+      (goto-char (point-min))
+      (cl-loop with entry = nil
+               for entry-type = (parsebib-find-next-item)
+               while entry-type do
+               (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
+                 (setq entry (parsebib-read-entry entry-type nil fields post-processors))
+                 (if entry
+                     (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
+      (when inheritance
+        (parsebib-expand-xrefs entries inheritance))
+      entries)))
 
 (defun parsebib-find-bibtex-dialect ()
   "Find the BibTeX dialect of a file if one is set.
@@ -1002,18 +1004,19 @@ FIELDS is nil, all fields are returned.
 REPLACE-TEX indicates whether TeX markup should be replaced with
 ASCII/Unicode characters.  See the variable
 `parsebib-TeX-markup-replace-alist' for details."
-  (save-excursion
-    (goto-char (point-min))
-    (or (and (hash-table-p entries)
-             (eq (hash-table-test entries) 'equal))
-        (setq entries (make-hash-table :test #'equal)))
-    (or (and (hash-table-p strings)
-             (eq (hash-table-test strings) 'equal))
-        (setq strings (make-hash-table :test #'equal)))
-    (let ((dialect (or (parsebib-find-bibtex-dialect)
-                       bibtex-dialect
-                       'BibTeX))
-          preambles comments)
+  (or (and (hash-table-p entries)
+           (eq (hash-table-test entries) 'equal))
+      (setq entries (make-hash-table :test #'equal)))
+  (or (and (hash-table-p strings)
+           (eq (hash-table-test strings) 'equal))
+      (setq strings (make-hash-table :test #'equal)))
+  (let ((post-processors (parsebib--list-post-processors (if expand-strings strings) replace-TeX))
+        (dialect (or (parsebib-find-bibtex-dialect)
+                     bibtex-dialect
+                     'BibTeX))
+        preambles comments)
+    (save-excursion
+      (goto-char (point-min))
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (cond
@@ -1026,7 +1029,7 @@ ASCII/Unicode characters.  See the variable
                 ((cl-equalp item "comment")
                  (push (parsebib-read-comment) comments))
                 ((stringp item)
-                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings) fields replace-TeX)))
+                 (let ((entry (parsebib-read-entry item nil fields post-processors)))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
       (when inheritance
