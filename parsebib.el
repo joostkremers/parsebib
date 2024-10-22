@@ -452,7 +452,7 @@ if a matching delimiter was found."
     ;; If forward-sexp does not result in an error, we want to return t.
     t))
 
-(defun parsebib--parse-bib-value (limit &optional strings replace-TeX)
+(defun parsebib--parse-bib-value (limit &optional strings replace-TeX collapse-whitespace)
   "Parse value at point.
 A value is either a field value or a @String expansion.  Return
 the value as a string.  No parsing is done beyond LIMIT, but note
@@ -465,7 +465,10 @@ braces or double quotes around field values are removed.
 
 REPLACE-TEX indicates whether TeX markup should be replaced with
 ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details."
+`parsebib-TeX-markup-replace-alist' for details.
+
+If COLLAPSE-WHITESPACE in non-nil, sequences of whitespace in the
+field value are collapsed into a single space."
   (let (res)
     (while (and (< (point) limit)
                 (not (looking-at-p ",")))
@@ -481,7 +484,7 @@ ASCII/Unicode characters.  See the variable
         (goto-char (match-end 0)))
        (t (forward-char 1)))) ; So as not to get stuck in an infinite loop.
     (setq res (if strings
-                  (string-join (parsebib--expand-strings (nreverse res) strings))
+                  (string-join (parsebib--expand-strings (nreverse res) strings collapse-whitespace))
                 (string-join (nreverse res) " # ")))
     (if replace-TeX
         (parsebib-clean-TeX-markup res)
@@ -491,15 +494,17 @@ ASCII/Unicode characters.  See the variable
 ;; Expanding stuff ;;
 ;;;;;;;;;;;;;;;;;;;;;
 
-(defun parsebib--expand-strings (strings abbrevs)
+(defun parsebib--expand-strings (strings abbrevs collapse-whitespace)
   "Expand @Strings abbreviations in STRINGS using expansions in ABBREVS.
 STRINGS is a list of strings.  If a string in STRINGS has an
 expansion in hash table ABBREVS, replace it with its expansion.
 Otherwise, if the string is enclosed in braces {} or double
-quotes \"\", remove the delimiters.  In addition, newlines, tabs
-and form feeds in the string are replaced with spaces."
+quotes \"\", remove the delimiters.  In addition, if
+COLLAPSE-WHITESPACE is non-nil, sequences of whitespace in the
+string are replaced with a single space."
   (mapcar (lambda (str)
-            (setq str (replace-regexp-in-string "[\t\n\f]]+" " " str))
+            (when collapse-whitespace
+              (setq str (replace-regexp-in-string "[[:space:]\t\n\f]+" " " str)))
             (cond
              ((gethash str abbrevs))
              ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
@@ -767,10 +772,12 @@ ASCII/Unicode characters.  See the variable
       (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
           (let* ((field (buffer-substring-no-properties beg (point)))
                  (replace-TeX (and replace-TeX
-                                   (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields)))))
+                                   (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields))))
+                 (collapse-whitespace (and strings
+                                           (not (member-ignore-case field parsebib-clean-TeX-markup-excluded-fields)))))
             (if (or (not fields)
                     (member-ignore-case field fields))
-                (cons field (parsebib--parse-bib-value limit strings replace-TeX))
+                (cons field (parsebib--parse-bib-value limit strings replace-TeX collapse-whitespace))
               (parsebib--parse-bib-value limit) ; Skip over the field value.
               :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
 
@@ -832,7 +839,14 @@ have to be empty.  It may contain entries from a previous parse.
 
 If STRINGS is non-nil, it should be a hash table of string
 definitions, which are used to expand abbreviations used in the
-entries.
+entries.  In addition, if STRINGS is set, sequences of whitespace
+in field values are collapsed into a single space, field values
+are unquoted (i.e., the double quotes or braces around them are
+removed), and TeX markup is prettified (see
+`parsebib-clean-TeX-markup' for details).  Note that @String
+expansion, collapsing of whitespace and prettifying TeX markup
+are not applied to fields listed in
+`parsebib-clean-TeX-markup-excluded-fields', but unquoting is.
 
 If INHERITANCE is non-nil, cross-references in the entries are
 resolved: if the crossref field of an entry points to an entry
@@ -867,7 +881,7 @@ FIELDS is nil, all fields are returned."
              for entry-type = (parsebib-find-next-item)
              while entry-type do
              (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry entry-type nil strings fields))
+               (setq entry (parsebib-read-entry entry-type nil strings fields (not (null strings))))
                (if entry
                    (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
     (when inheritance
@@ -904,7 +918,12 @@ function `equal', the @String definitions are stored in it.
 
 If EXPAND-STRINGS is non-nil, abbreviations in the entries and
 @String definitions are expanded using the @String definitions
-already in STRINGS.
+already in STRINGS.  In addition, sequences of whitespace in
+field values are collapsed into a single space and field values
+are unquoted, i.e., the double quotes or braces around them are
+removed.  Note that @String expansion, collapsing of whitespace
+and prettifying TeX markup are not applied to fields listed in
+`parsebib-clean-TeX-markup-excluded-fields', but unquoting is.
 
 If INHERITANCE is non-nil, cross-references in the entries are
 resolved: if the crossref field of an entry points to an entry

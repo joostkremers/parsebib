@@ -327,4 +327,97 @@
   ;; Braces not part of a command should be removed.
   (should (equal (parsebib-clean-TeX-markup "The {UN} should be all-caps.") "The UN should be all-caps.")))
 
+;;; Test for reading the .bib file for display.
+
+;; Test if @String abbreviations are expanded.
+(ert-deftest parsebib-test-parse-bib-buffer-@Strings ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
+                     "\n"
+                     "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "publisher" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
+                          nil nil #'equal)))
+           "Berlin: Mouton de Gruyter")))
+
+;; Test if braces around the `file' field are removed.
+(ert-deftest parsebib-test-parse-bib-buffer-braces-in-file-field ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
+                     "\n"
+                     "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "file" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
+                          nil nil #'equal)))
+           "a/Alexiadou_Haegeman_Stavrou2007.pdf")))
+
+;; Test if TeX markup is handled.
+(ert-deftest parsebib-test-parse-bib-buffer-TeX-markup ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@Article{Broekhuis:Cornips2012,\n"
+                     "	doi = {10.1515/ling-2012-0039},\n"
+                     "	file = {b/Broekhuis_Cornips2012.pdf},\n"
+                     "	pages = {1205-1249},\n"
+                     "	volume = {50},\n"
+                     "	number = {6},\n"
+                     "	date = {2012},\n"
+                     "	journaltitle = {Linguistics},\n"
+                     "	title = {The Verb \\textit{krijgen} `to get' as an Undative Verb},\n"
+                     "	author = {Broekhuis, Hans and Cornips, Leonie},\n"
+                     "	timestamp = {2019-01-16 23:38:31 (CET)}}\n")
+             (let ((results (parsebib-parse-bib-buffer :replace-TeX t)))
+               (alist-get "title" (gethash "Broekhuis:Cornips2012" (car results))
+                          nil nil #'equal)))
+           #("The Verb krijgen ‘to get’ as an Undative Verb" 9 16 (face italic)))))
+
+;; Test if white space is collapsed.
+(ert-deftest parsebib-test-parse-bib-buffer-collapse-whitespace ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}\n"
+                     "\n"
+                     "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase  in the \n  Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "title" (gethash "Alexiadou:Haegeman:Stavrou2007" (car results))
+                          nil nil #'equal)))
+           "Noun Phrase in the Generative Perspective")))
+
+;; Test if sequences of spaces in file names are retained, even if @strings are expanded.
+(ert-deftest parsebib-test-parse-bib-buffer-dont-collapse-whitespace-in-file-field ()
+  (should (equal
+           (with-temp-buffer
+             (insert
+              "@inproceedings{ahnIdentifyingCPUBottlenecks,\n"
+              "  title = {Identifying {{On-}}/{{Off-CPU Bottlenecks Together}} with {{Blocked Samples}} {\textbar} {{USENIX}}},\n"
+              "  shorttitle = {{{BCOZ}}},\n"
+              "  author = {Ahn, Minwoo and Han, Jeongmin and Kwon, Youngjin and Jeong, Jinkyu},\n"
+              "  urldate = {2024-10-09},\n"
+              "  langid = {english},\n"
+              "  file = {/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf}}\n")
+             (let ((results (parsebib-parse-bib-buffer :expand-strings t)))
+               (alist-get "file" (gethash "ahnIdentifyingCPUBottlenecks" (car results))
+                          nil nil #'equal)))
+           "/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf")))
+
 ;;; parsebib-test.el ends here
