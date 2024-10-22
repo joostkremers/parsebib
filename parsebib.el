@@ -493,7 +493,7 @@ ASCII/Unicode characters.  See the variable
 ;;;;;;;;;;;;;;;;;;;;;
 
 (defun parsebib--expand-strings (strings abbrevs)
-  "Expand strings in STRINGS using expansions in ABBREVS.
+  "Expand @Strings abbreviations in STRINGS using expansions in ABBREVS.
 STRINGS is a list of strings.  If a string in STRINGS has an
 expansion in hash table ABBREVS, replace it with its expansion.
 Otherwise, if the string is enclosed in braces {} or double
