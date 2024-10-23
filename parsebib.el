@@ -207,6 +207,7 @@ target field is set to the symbol `none'.")
     ("textellipsis"       . "\N{HORIZONTAL ELLIPSIS}")
     ("textemdash"         . "\N{EM DASH}")
     ("textendash"         . "\N{EN DASH}")
+    ("textbar"            . "|")
 
     ;; Non-ASCII Letters (Excluding Accented Letters)
     ("AA" . "\N{LATIN CAPITAL LETTER A WITH RING ABOVE}")
