@@ -68,7 +68,7 @@ The argument `entries` can be used to pass a (possibly non-empty) hash table in 
 
 If the argument `strings` is present, `@String` abbreviations are expanded. `strings` should be a hash table of `@String` definitions as returned by `parsebib-collect-strings`. In addition, sequences of whitespace (space, tab, newline) are collapsed into a single space, field values are unquoted (i.e., the double quotes or braces around them are removed), and TeX markup is prettified or removed. Note that @String
 expansion, collapsing of whitespace and prettifying TeX markup
-are not applied to fields listed in `parsebib-postprocessing-excluded-fields', but unquoting is.
+are not applied to fields listed in `parsebib-postprocessing-excluded-fields`, but unquoting is.
 
 If the argument `inheritance` is present, cross-references among entries are resolved. It can be `t`, in which case the file-local or global value of `bibtex-dialect` is used to determine which inheritance schema is used. It can also be one of the symbols `BibTeX` or `biblatex`, or it can be a custom inheritance schema. Note that cross-references are resolved against the entries that appear in the buffer *above* the current entry, and also against the entries in the hash table `entries`.
 
@@ -114,7 +114,7 @@ If `replace-TeX` in set, (La)TeX markup in field values is replaced with text th
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 
 
-#### `parsebib-postprocessing-exclude-fields` ####
+#### `parsebib-postprocessing-excluded-fields` ####
 
 This variable is set to a list of fields in which no clean-up of TeX markup should take place when parsing a buffer. To customise this list, you can `let`-bind it around a call to `parsebib-parse-bib-buffer`. Its default value is `("file" "url" "doi")`.
 
@@ -156,7 +156,7 @@ The reading functions return `nil` if they do not find the element they should b
 
 #### parsebib-clean-TeX-markup (string) ####
 
-Apply all replacements in `parsebib-TeX-markup-replace-alist` to `string`. Note that this function ignores the value of `parsebib-postprocessing-exclude-fields`, because it just sees the string itself, not which field `string` comes from. 
+Apply all replacements in `parsebib-TeX-markup-replace-alist` to `string`. Note that this function ignores the value of `parsebib-postprocessing-excluded-fields`, because it just sees the string itself, not which field `string` comes from. 
 
 
 ## CSL-JSON ##
