@@ -116,7 +116,9 @@ Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It
 
 #### `parsebib-postprocessing-excluded-fields` ####
 
-This variable is set to a list of fields in which no clean-up of TeX markup should take place when parsing a buffer. To customise this list, you can `let`-bind it around a call to `parsebib-parse-bib-buffer`. Its default value is `("file" "url" "doi")`.
+This variable is set to a list of fields that should always be returned as-is, without any post-processing. The default value of this variable is  `("file" "url" "doi")`, though you can customise it by `let`-binding it around calls to the higher-level parse functions.
+
+Note that double quotes or braces around field values *are* removed for fields listed in this variable.
 
 
 #### `parsebib-expand-xrefs (entries inheritance)` ####
