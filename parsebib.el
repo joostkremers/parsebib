@@ -358,7 +358,7 @@ and `parsebib-TeX-literal-replacement-alist' respectively.")
 (defvar parsebib-postprocessing-excluded-fields '("file"
                                                   "url"
                                                   "doi")
-  "List of fields that should not be passed to `parsebib-clean-TeX-markup'.")
+  "List of fields that should not be post-processed.")
 
 (defun parsebib--replace-command-or-accent (string)
   "Return the replacement text for the command or accent matched by STRING."
