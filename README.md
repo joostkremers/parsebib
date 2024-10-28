@@ -44,7 +44,7 @@ Post-processing also involves expanding `@String` abbreviations: abbreviations i
 
 The `file`, `url` and `doi` fields are excluded from post-processing, because they usually don't contain any TeX code or `@String` abbreviations, and because modifying them may actually be harmful (e.g., replacing multiple spaces with a single space in a file name). You can exclude more fields from post-processing by adding them to the variable `parsebib-postprocessing-excluded-fields`. (Note that double quotes or braces around the values of these fields *are* removed.)
 
-In addition to this post-processing, `parsebib` can resolve cross-references. This means that if an entry has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and BibLaTeX's more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
+In addition to this post-processing, `parsebib` can resolve cross-references. This means that if an entry has a `crossref` field, fields in the cross-referenced entry that are not already part of the cross-referencing entry are added to it. Both BibTeX's (rather simplistic) inheritance rule and `biblatex`'s more sophisticated inheritance schema are supported. It is also possible to specify a custom inheritance schema.
 
 Expanding `@Strings` and resolving cross-references can also be done across files, by passing the result of parsing one file as arguments when parsing the next file. Details are discussed below.
 
