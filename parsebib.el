@@ -6,7 +6,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 2014
-;; Version: 4.7
+;; Version: 5.0
 ;; Keywords: text bibtex
 ;; URL: https://github.com/joostkremers/parsebib
 ;; Package-Requires: ((emacs "25.1"))
@@ -179,13 +179,33 @@ target field is set to the symbol `none'.")
 (defconst parsebib--key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
+(defvar parsebib-TeX-cleanup-target 'display
+  "Target for `parsebib-clean-TeX-markup'.
+This variable affects the output of the functions that convert
+LaTeX font commands \\textbf, \\textit, and \\emph.  Its value
+should be one of the symbols `display', `markdown' or `org'.  See
+`parsebib--convert-tex-italics' and `parsebib--convert-tex-bold'
+for details.")
+
 (defun parsebib--convert-tex-italics (str)
-  "Return STR with face property `italic'."
-  (propertize str 'face 'italic))
+  "Return STR converted to italic face.
+Depending on the value of `parsebib-TeX-cleanup-target', add a
+face property `italic' to STR, or return it with Markdown or Org
+markup for italic text."
+  (pcase parsebib-TeX-cleanup-target
+    ('display (propertize str 'face 'italic))
+    ('markdown (concat "*" str "*"))
+    ('org (concat "/" str "/"))))
 
 (defun parsebib--convert-tex-bold (str)
-  "Return STR with face property `bold'."
-  (propertize str 'face 'bold))
+  "Return STR converted to bold face.
+Depending on the value of `parsebib-TeX-cleanup-target', add a
+face property `bold' to STR, or return it with Markdown or Org
+markup for bold text."
+  (pcase parsebib-TeX-cleanup-target
+    ('display (propertize str 'face 'bold))
+    ('markdown (concat "**" str "**"))
+    ('org (concat "*" str "*"))))
 
 (defun parsebib--convert-tex-small-caps (str)
   "Return STR capitalised."

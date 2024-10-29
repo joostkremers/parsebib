@@ -38,7 +38,7 @@ Support for `.bib` files comes in two different APIs, a higher-level one that re
 
 In order to return entries in a way that is suitable for display, `parsebib` can post-process field values while reading the contents of a `.bib` file. This post-processing involves a number of modifications. First, it removes the braces or double quotes around field values,  replaces newlines, tabs and form feeds with spaces, and collapses sequences of whitespace characters into a single space.
 
-Furthermore, TeX markup is prettified: LaTeX commands for special characters are replaced with their (Unicode) representations (i.e. `\textdollar` is replaced with $, `\S` with §, `---` with —, etc.), LaTeX commands that have an obligatory argument are replaced with that argument, optional arguments and braces are removed. In addition, the arguments of `\textit` and friends are given text properties so that they display as italic, bold, etc., (provided a suitable font is used in Emacs). LaTeX commands that have no obligatory argument, such as `\LaTeX`, are retained.
+Furthermore, TeX markup is prettified: LaTeX commands for special characters are replaced with their (Unicode) representations (i.e. `\textdollar` is replaced with $, `\S` with §, `---` with —, etc.), LaTeX commands that have an obligatory argument are replaced with that argument, optional arguments and braces are removed. In addition, the arguments of `\textbf`, `\textit` and `\emph` are given text properties so that they display as bold or italic, and the argument of `\textsc` is converted to caps. (Optionally, the arguments of `\text{bf|it}` and `\emph` can be converted to Org or Markdown; see below for details.) LaTeX commands that have no obligatory argument, such as `\LaTeX`, are retained.
 
 Post-processing also involves expanding `@String` abbreviations: abbreviations in field values (or `@String` definitions) are replaced with their definition, so that field values are (more or less) shown the way they would appear after processing with BibTeX / `biblatex`.
 
@@ -120,6 +120,10 @@ This variable is set to a list of fields that should always be returned as-is, w
 
 Note that double quotes or braces around field values *are* removed for fields listed in this variable.
 
+
+#### `parsebib-TeX-cleanup-target` ####
+
+This variable controls how `parsebib-clean-TeX-markup` the LaTeX font commands `\text{bf|it}` and `\emph`. If the variable is set to the symbol `display`, which is the default, these commands are replaced with their arguments augmented with a font property `bold` or `italic`. If this variable is set to `org` or `markdown`, they are instead converted to the appropriate markup.
 
 #### `parsebib-expand-xrefs (entries inheritance)` ####
 

@@ -225,19 +225,43 @@
   (should (equal-including-properties
            (parsebib-clean-TeX-markup "The verb \\textit{krijgen} as an undative verb.")
            #("The verb krijgen as an undative verb." 9 16
-             (face italic)))))
+             (face italic))))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'markdown))
+             (parsebib-clean-TeX-markup "The verb \\textit{krijgen} as an undative verb."))
+           "The verb *krijgen* as an undative verb."))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'org))
+             (parsebib-clean-TeX-markup "The verb \\textit{krijgen} as an undative verb."))
+           "The verb /krijgen/ as an undative verb.")))
 
 (ert-deftest parsebib-clean-TeX-markup-emph ()
   (should (equal-including-properties
            (parsebib-clean-TeX-markup "The verb \\emph{krijgen} as an undative verb.")
            #("The verb krijgen as an undative verb." 9 16
-             (face italic)))))
+             (face italic))))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'markdown))
+             (parsebib-clean-TeX-markup "The verb \\emph{krijgen} as an undative verb."))
+           "The verb *krijgen* as an undative verb."))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'org))
+             (parsebib-clean-TeX-markup "The verb \\emph{krijgen} as an undative verb."))
+           "The verb /krijgen/ as an undative verb.")))
 
 (ert-deftest parsebib-clean-TeX-markup-textbf ()
   (should (equal-including-properties
            (parsebib-clean-TeX-markup "The verb \\textbf{krijgen} as an undative verb.")
            #("The verb krijgen as an undative verb." 9 16
-             (face bold)))))
+             (face bold))))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'markdown))
+             (parsebib-clean-TeX-markup "The verb \\textbf{krijgen} as an undative verb."))
+           "The verb **krijgen** as an undative verb."))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'org))
+             (parsebib-clean-TeX-markup "The verb \\textbf{krijgen} as an undative verb."))
+           "The verb *krijgen* as an undative verb.")))
 
 (ert-deftest parsebib-clean-TeX-markup-textsc ()
   (should (equal
