@@ -1,6 +1,7 @@
 ;;; parsebib-test.el --- Tests for parsebib
 
 (require 'parsebib)
+(require 'rdp)
 
 ;; Note: tests are named with the prefix `parsebib-test-' followed by the name
 ;; of the function being tested, without the `parsebib-' or `parsebib--' prefix.
@@ -443,5 +444,59 @@
                (alist-get "file" (gethash "ahnIdentifyingCPUBottlenecks" (car results))
                           nil nil #'equal)))
            "/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf")))
+
+;;; Test the RDP
+(ert-deftest parsebib-test-rdp-@Comment ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@Comment{ -*-coding: utf-8 -*- }\n")
+             (goto-char (point-min))
+             (rdp-@Comment))
+           "{ -*-coding: utf-8 -*- }"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@Comment -*-coding: utf-8 -*-\n")
+             (goto-char (point-min))
+             (rdp-@Comment))
+           "-*-coding: utf-8 -*-"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@Comment{\n"
+                     "    Local Variables:\n"
+                     "    bibtex-dialect: biblatex\n"
+                     "    End:\n"
+                     "}\n")
+             (goto-char (point-min))
+             (rdp-@Comment))
+           (concat "{\n"
+                   "    Local Variables:\n"
+                   "    bibtex-dialect: biblatex\n"
+                   "    End:\n"
+                   "}"))))
+
+(ert-deftest parsebib-test-rdp-@String ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}")
+             (goto-char (point-min))
+             (rdp-@String))
+           (cons "MGrt" "{Berlin: Mouton de Gruyter}")))
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{LI = \"Linguistic Inquiry\"}")
+             (goto-char (point-min))
+             (rdp-@String))
+           (cons "LI" "\"Linguistic Inquiry\"")))
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{CUP = {Cambridge: Cambridge } # UP}")
+             (goto-char (point-min))
+             (rdp-@String))
+           (cons "CUP" "{Cambridge: Cambridge } # UP")))
+  (should-error (with-temp-buffer
+                  (insert "@String{CUP = {Cambridge: Cambridge } # UP\n")
+                  (goto-char (point-min))
+                  (rdp-@String))
+                :type 'rdp-error))
 
 ;;; parsebib-test.el ends here
