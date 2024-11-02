@@ -498,4 +498,29 @@
                   (parsebib--@String))
                 :type 'parsebib-error))
 
+(ert-deftest parsebib-test-read-entry-after-last-field ()
+  ;; The last field in an entry does not have to have a comma after it:
+  (should (equal
+           (with-temp-buffer
+             (insert "@article{10.1162/coli_a_00528,\n"
+                     "    title = {Usage-based Grammar Induction from Minimal Cognitive Principles}\n"
+                     "}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (cons (alist-get "=key=" results nil nil #'equal)
+                     (alist-get "title" results nil nil #'equal))))
+           (cons "10.1162/coli_a_00528"
+                 "{Usage-based Grammar Induction from Minimal Cognitive Principles}")))
+  ;; But there *may* be a comma after the last field:
+  (should (equal
+           (with-temp-buffer
+             (insert "@article{10.1162/coli_a_00528,\n"
+                     "    title = {Usage-based Grammar Induction from Minimal Cognitive Principles},\n"
+                     "}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (cons (alist-get "=key=" results nil nil #'equal)
+                     (alist-get "title" results nil nil #'equal))))
+           (cons "10.1162/coli_a_00528"
+                 "{Usage-based Grammar Induction from Minimal Cognitive Principles}"))))
 ;;; parsebib-test.el ends here

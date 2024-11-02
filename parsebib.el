@@ -385,7 +385,11 @@ A set of assignments makes up the body of an entry."
   (let ((fields (list (parsebib--assignment))))
     (while (and (parsebib--char "," :noerror)
                 (not (eobp)))
-      (push (parsebib--assignment) fields))
+      ;; There may be a comma after the final field of an entry. If that
+      ;; happens, reading another assignment will fail, so we capture the
+      ;; error here.
+      (ignore-error 'parsebib-error
+        (push (parsebib--assignment) fields)))
     (nreverse fields)))
 
 ;; BibTeX items
