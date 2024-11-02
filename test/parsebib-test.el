@@ -523,4 +523,34 @@
                      (alist-get "title" results nil nil #'equal))))
            (cons "10.1162/coli_a_00528"
                  "{Usage-based Grammar Induction from Minimal Cognitive Principles}"))))
+
+;; Test braces and parentheses around an entry:
+(ert-deftest parsebib-test-read-entry-parentheses ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (alist-get "=key=" results nil nil #'equal)))
+           "Alexiadou:Haegeman:Stavrou2007"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@book(Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf})\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (alist-get "=key=" results nil nil #'equal)))
+           "Alexiadou:Haegeman:Stavrou2007")))
+
 ;;; parsebib-test.el ends here
