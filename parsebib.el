@@ -49,16 +49,25 @@
 
 (declare-function json-read "json.el")
 
-(define-error 'parsebib-entry-type-error "[Parsebib] Illegal entry type at point" 'error)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; BibTeX / biblatex parser ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defvar parsebib-hashid-fields nil
   "List of fields used to create a hash id for each entry.
 Hash ids can only be created for BibTeX/biblatex files.  The hash
 id is stored in the entry in the special field `=hashid='.")
+
+;; Regexes describing BibTeX identifiers and keys.  Note that while $ ^ & are
+;; valid in BibTeX keys, they may nonetheless be problematic, because they are
+;; special for TeX.  The difference between `parsebib--bibtex-identifier' and
+;; `parsebib--key-regexp' are the parentheses (), which are valid in keys.  It may in
+;; fact not be necessary (or desirable) to distinguish the two, but until
+;; someone complains, I'll keep it this way.
+(defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
+(defconst parsebib--key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
+(defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
+
+(defvar parsebib-postprocessing-excluded-fields '("file"
+                                                  "url"
+                                                  "doi")
+  "List of fields that should not be post-processed.")
 
 (defvar parsebib--biblatex-inheritances '(;; Source                        Target
                                           ("all"                           "all"
@@ -169,15 +178,472 @@ combination, the field inherits from the same-name field in the
 cross-referenced entry.  If no inheritance should take place, the
 target field is set to the symbol `none'.")
 
-;; Regexes describing BibTeX identifiers and keys.  Note that while $ ^ & are
-;; valid in BibTeX keys, they may nonetheless be problematic, because they are
-;; special for TeX.  The difference between `parsebib--bibtex-identifier' and
-;; `parsebib--key-regexp' are the parentheses (), which are valid in keys.  It may in
-;; fact not be necessary (or desirable) to distinguish the two, but until
-;; someone complains, I'll keep it this way.
-(defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
-(defconst parsebib--key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
-(defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; BibTeX / biblatex parser ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; Parser primitives
+;;
+;; The parser is divided into a set of primitives, which do the actual
+;; reading, and a set of grammar rules, which describe the syntax of a
+;; BibTeX file.
+;;
+;; A few things to keep in mind:
+;;
+;; - The primitives are BibTeX-agnostic. They read specific chunks of the
+;;   source and return them.
+;;
+;; - The primitives can be parameterised; that is, the exact text that they
+;;   read may depend on arguments passed to them. The grammar rules do not
+;;   have any parameters.
+;;
+;; - The primitives are responsible for skipping whitespace.
+
+(define-error 'parsebib-error "[Parsebib error]" 'error)
+
+(defun parsebib--skip-whitespace ()
+  "Skip whitespace."
+  (skip-chars-forward " \n\r\t\f\v"))
+
+(defun parsebib--comment-line ()
+  "Read a single-line comment and return it."
+  (prog1 (buffer-substring-no-properties (point) (pos-eol))
+    (forward-line 1)))
+
+(defun parsebib--char (chars &optional noerror)
+  "Read the character at point.
+CHARS is a string and should describe a set of characters, as in
+a character alternative in `[...]' in a regular expression.  If
+the character at point matches CHARS, return it and move point,
+otherwise signal an error, unless NOERROR is non-nil, in which
+case return nil."
+  (parsebib--skip-whitespace)
+  (if (looking-at-p (concat "[" chars "]"))
+      (let ((char (char-after)))
+        (forward-char 1)
+        char)
+    (unless noerror
+      (signal 'parsebib-error (list (format "Expected [%s], got `%c' at position %d"
+                                            chars
+                                            (following-char)
+                                            (point)))))))
+
+(defun parsebib--keyword (keywords &optional noerror)
+  "Read the keyword following point.
+KEYWORDS is a list of allowed keywords.  If the text following
+point matches one of KEYWORDS, return it and move point.
+Otherwise signal an error, unless NOERROR is non-nil, in which
+case return nil."
+  (parsebib--skip-whitespace)
+  (if (looking-at (regexp-opt keywords))
+      (let ((keyword (match-string-no-properties 0)))
+        (progn
+          (goto-char (match-end 0))
+          keyword))
+    (unless noerror
+      (signal 'parsebib-error (list (format "Expected one of %s, got `%c' at position %d"
+                                            keywords
+                                            (char-after)
+                                            (point)))))))
+
+(defun parsebib--symbol (regexp &optional noerror)
+  "Read a symbol and return it.
+REGEXP is a regular expression describing a licit symbol.  If a
+symbol is found, return it.  Otherwise signal an error, unless
+NOERROR is non-nil, in which case return nil."
+  (parsebib--skip-whitespace)
+  (if (looking-at regexp)
+      (progn
+        (goto-char (match-end 0))
+        (match-string-no-properties 0))
+    (unless noerror
+      (signal 'parsebib-error (list (format "Illegal identifier at position %d" (point)))))))
+
+(defun parsebib--seq-delim (open close esc)
+  "Read a delimited sequence.
+A delimited sequence is a sequence delimited by OPEN and CLOSE
+characters, which must be different (e.g., any kind of
+parentheses).  ESC is an escape character that can be used to
+escape OPEN and CLOSE inside the sequence.  OPEN and CLOSE can
+appear in the sequence unescaped as long as they are
+balanced.  (In other words, the sequence can contain nested
+sequences)."
+  (parsebib--skip-whitespace)
+  (let ((beg (point))
+        (n-braces 1)
+        (skip-chars (format "^%c%c" open close)))
+    (parsebib--char (char-to-string open))
+    (while (and (> n-braces 0)
+                (not (eobp)))
+      (skip-chars-forward skip-chars)
+      (cond
+       ((eq (char-after) open)
+        (unless (eq (char-before) esc)
+          (setq n-braces (1+ n-braces))))
+       ((eq (char-after) close)
+        (unless (eq (char-before) esc)
+          (setq n-braces (1- n-braces)))))
+      (ignore-error 'end-of-buffer (forward-char 1)))
+    (if (> n-braces 0)
+        (signal 'parsebib-error (list (format "Opening %c at position %d has no closing %c" open beg close)))
+      (buffer-substring-no-properties beg (point)))))
+
+(defun parsebib--string (delim esc)
+  "Read a string delimited by DELIM.
+A string is a delimited sequence where the opening and closing
+delimiters are identical, e.g., \"...\".  ESC is the escape
+character."
+  (parsebib--skip-whitespace)
+  (let ((beg (point))
+        (continue t)
+        (skip-chars (format "^%c" delim)))
+    (parsebib--char (char-to-string delim))
+    (while (and continue
+                (not (eobp)))
+      (skip-chars-forward skip-chars)
+      (unless (eq (char-before) esc)
+        (setq continue nil))
+      (forward-char 1))
+    (if continue
+        (signal 'parsebib-error (list (format "Opening %c at position %d has no closing %c" delim beg delim)))
+      (buffer-substring-no-properties beg (point)))))
+
+(defun parsebib--match (rules)
+  "Check if any of RULES matches at point.
+If a rule matches, apply it and return the result.  Otherwise,
+signal an error."
+  (parsebib--skip-whitespace)
+  (let ((start-pos (point))
+        last-error)
+    (catch 'success
+      (dolist (rule rules)
+        (condition-case err
+            (let ((res (funcall rule)))
+              (parsebib--skip-whitespace)
+              (throw 'success res))
+          (parsebib-error
+           (goto-char start-pos)
+           (setq last-error err))))
+      (signal (car last-error) (cdr last-error)))))
+
+;;; Parser rules
+
+;; Basic building blocks
+
+(defun parsebib--text ()
+  "Parse text.
+Text is anything that is between braces or double quotes that
+should be read literally."
+  (parsebib--match '(parsebib--braced-text
+                     parsebib--quoted-text)))
+
+(defun parsebib--braced-text ()
+  "Parse text in curly braces."
+  (parsebib--seq-delim ?\{ ?\} ?\\))
+
+(defun parsebib--quoted-text ()
+  "Parse text in double quotes."
+  (parsebib--string ?\" ?\\))
+
+(defun parsebib--identifier ()
+  "Parse a BibTeX identifier."
+  (parsebib--symbol parsebib--bibtex-identifier))
+
+(defun parsebib--composed-value ()
+  "Parse a BibTeX composed field value.
+A composed value consists of one or more values concatenated
+using the character `#'.  They typically appear after an equal
+sign as field values an in @String definitions as expansions."
+  (let ((val (list (parsebib--value))))
+    (while (and (parsebib--char "#" :noerror)
+                (not (eobp)))
+      (push (parsebib--value) val))
+    (nreverse val)))
+
+(defun parsebib--value ()
+  "Parse a BibTeX value.
+A value is one component of a composed value (see
+`parsebib--composed-value') and can either be a quoted text or a
+@String abbreviation."
+  (parsebib--match '(parsebib--text
+                     parsebib--identifier)))
+
+(defun parsebib--assignment ()
+  "Parse a BibTeX assignment.
+An assignment is the combination of an identifier, an equal sign
+and a composed value.  An @String definition has exactly one
+assignment, an entry has a potentially unlimited number."
+  (if-let* ((id (parsebib--identifier))
+            ((parsebib--char "="))
+            (val (parsebib--composed-value)))
+      (cons id val)
+    (signal 'parsebib-error (list (format "Malformed key=value assignment at position %d" (point))))))
+
+(defun parsebib--fields ()
+  "Parse a set of BibTeX assignments.
+A set of assignments makes up the body of an entry."
+  (let ((fields (list (parsebib--assignment))))
+    (while (and (parsebib--char "," :noerror)
+                (not (eobp)))
+      (push (parsebib--assignment) fields))
+    fields))
+
+;; BibTeX items
+
+(defun parsebib--@Comment ()
+  "Parse a @Comment.
+Return the contents of the @Comment as a string."
+  (parsebib--char "@")
+  (parsebib--keyword '("comment"))
+  (or (parsebib--match '(parsebib--text
+                         parsebib--comment-line))
+      (signal 'parsebib-error (list (format "Malformed @Comment at position %d" (point))))))
+
+(defun parsebib--@Preamble ()
+  "Parse a @Preamble.
+Return the contents of the @Preamble as a string."
+  (parsebib--char "@")
+  (parsebib--keyword '("preamble"))
+  (or (parsebib--text)
+      (signal 'parsebib-error (list (format "Malformed @Preamble at position %d" (point))))))
+
+(defun parsebib--@String ()
+  "Parse an @String definition.
+Return the definition as a cons cell of the abbreviation and a
+composed value as a list."
+  (if-let* (((parsebib--char "@"))
+            ((parsebib--keyword '("string")))
+            ((parsebib--char "{("))
+            (definition (parsebib--assignment))
+            ((parsebib--char "})")))
+      definition
+    (signal 'parsebib-error (list (format "Malformed @String definition at position %d" (point))))))
+
+(defun parsebib--entry ()
+  "Parse a BibTeX database entry.
+Return the entry as an alist of <field . value> pairs.  Note that
+the value is a list, so that each entry in the returned alist is
+actually a list."
+  (if-let* (((parsebib--char "@"))
+            (type (parsebib--identifier))
+            ((parsebib--char "{("))
+            (key (parsebib--identifier))
+            ((parsebib--char ","))
+            (fields (parsebib--fields))
+            ((parsebib--char "})")))
+      (progn (push (cons "=type=" (list type)) fields)
+             (push (cons "=key=" (list key)) fields)
+             (nreverse fields))
+    (signal 'parsebib-error (list (format "Malformed entry definition at position %d" (point))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Low-level BibTeX/biblatex API ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun parsebib-find-next-item ()
+  "Find the first (potential) BibTeX item following point.
+This function simply searches for an @ at the start of a line,
+possibly preceded by spaces or tabs, followed by a string of
+characters as defined by `parsebib--bibtex-identifier'.
+
+The return value is the name of the item as a string, either
+\"Comment\", \"Preamble\" or \"String\", or the entry
+type (without the @)."
+  (when (re-search-forward parsebib--entry-start nil 0)
+    (if (looking-at (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?"))
+        (prog1 (match-string-no-properties 1)
+          (goto-char (pos-bol)))
+      (signal 'parsebib-error (list (format "Could not find BibTeX entry at position %d" (point)))))))
+
+(defun parsebib--get-hashid-string (fields)
+  "Create a string from the contents of FIELDS to compute a hash id."
+  (cl-loop
+   for field in parsebib-hashid-fields
+   collect (or
+            ;; Remove braces {}.
+            (replace-regexp-in-string "^{\\|}$" "" (cdr (assoc-string field fields 'case-fold)))
+            "")
+   into hashid-fields
+   finally return (mapconcat #'identity hashid-fields "")))
+
+(defun parsebib-read-entry (&optional fields strings replace-TeX)
+  "Read a BibTeX entry starting at point.
+Return an alist of (<field> .  <contents>) conses, or nil if no
+entry was found.  The returned alist provides the entry key in
+the field \"=key=\" and the entry type in the field \"=type=\".
+
+If `parsebib-hashid-fields' is non-nil, a hash ID is added in the
+field \"=hashid=\".  The hash is computed on the basis of the
+contents of the fields listed in `parsebib-hashid-fields' using
+the function `secure-hash' and the `sha256' algorithm.
+
+FIELDS is a list of the field names (as strings) to be read and
+included in the result.  Fields not in the list are ignored.
+Case is ignored when comparing fields to the list in FIELDS.  If
+FIELDS is nil, all fields are returned.  Note that if FIELDS is
+non-nil, it should contain the field names \"=key=\" and
+\"=type=\".
+
+STRINGS and REPLACE-TEX are used to post-process field values.
+See the function `parsebib--post-process' for details."
+  (let ((entry (parsebib--entry)))
+    (when fields
+      (setq entry (seq-filter (lambda (field)
+                                (member-ignore-case (car field) fields))
+                              entry)))
+    (setq entry (mapcar (lambda (field)
+                          (parsebib--post-process field strings replace-TeX))
+                        entry))
+    (when parsebib-hashid-fields
+      (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-string fields))) entry))
+    entry))
+
+(defun parsebib-read-string (&optional strings)
+  "Read the @String definition beginning at point.
+Return the definition as a cons cell (<abbrev> . <expansion>).
+
+If STRINGS is provided it should be a hash table with string
+abbreviations, which are used to expand abbreviations in the
+string's expansion."
+  (let* ((definition (parsebib--@String))
+         (abbrev (car definition))
+         (expansion (cdr definition)))
+    (setq expansion (if strings
+                        (string-join (parsebib--expand-strings expansion strings t))
+                      (string-join expansion " # ")))
+    (cons abbrev expansion)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Post-processing stuff ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun parsebib--post-process (field strings replace-TeX)
+  "Post-process FIELD.
+FIELD is a cons cell consisting of the field name and the field
+value.  The field value is a list of strings.
+
+If STRINGS is provided, it should be a hash table with string
+definitions.  @String abbreviations in field values are then
+expanded using these definitions.  In addition, field values are
+unquoted, newlines are removed and sequences of whitespace are
+collapsed into a single space.
+
+If REPLACE-TEX is non-nil, TeX markup is cleaned up.  See the
+variable `parsebib-TeX-markup-replace-alist' for details.
+
+No post-processing is applied to fields listed in
+`parsebib-postprocessing-excluded-fields', with the exception of
+unquoting, which is always applied if STRINGS is non-nil.
+
+Finally, the strings in the field value are concatenated.  Return
+value is a cons cell of field name and field value, the value now
+being a single string."
+  (let* ((name (car field))
+         (value (cdr field))
+         (post-process (not (member-ignore-case name parsebib-postprocessing-excluded-fields))))
+    (setq value (if strings
+                    (string-join (parsebib--expand-strings value strings post-process))
+                  (string-join value " # ")))
+    (when (and replace-TeX post-process)
+      (setq value (parsebib-clean-TeX-markup value)))
+    (cons name value)))
+
+(defun parsebib--expand-strings (strings abbrevs collapse-whitespace)
+  "Expand @Strings abbreviations in STRINGS using expansions in ABBREVS.
+STRINGS is a list of strings.  If a string in STRINGS has an
+expansion in hash table ABBREVS, replace it with its expansion.
+Otherwise, if the string is enclosed in braces {} or double
+quotes \"\", remove the delimiters.  In addition, if
+COLLAPSE-WHITESPACE is non-nil, sequences of whitespace in the
+string are replaced with a single space."
+  (mapcar (lambda (str)
+            (when collapse-whitespace
+              (setq str (replace-regexp-in-string "[[:space:]\t\n\f]+" " " str)))
+            (cond
+             ((gethash str abbrevs))
+             ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
+              (match-string 1 str))
+             (t str)))
+          strings))
+
+(defun parsebib-expand-xrefs (entries inheritance)
+  "Expand cross-referencing items in ENTRIES.
+BibTeX entries in ENTRIES that have a `crossref' field are
+expanded with the fields in the cross-referenced entry.  ENTRIES
+is a hash table with entries.  This hash table is updated with
+the new fields.  The return value of this function is always nil.
+
+INHERITANCE indicates the inheritance schema.  It can be a symbol
+`BibTeX' or `biblatex', or it can be an explicit inheritance
+schema.  See the variable `parsebib--biblatex-inheritances' for
+details on the structure of such an inheritance schema."
+  (maphash (lambda (key fields)
+             (let ((xref (cdr (assoc-string "crossref" fields))))
+               (when xref
+                 (if (string-match-p (concat "\\b[\"{]" parsebib--key-regexp "[\"}]\\b") xref)
+                     (setq xref (substring xref 1 -1)))
+                 (let* ((source (gethash xref entries))
+                        (updated-entry (parsebib--get-xref-fields fields source inheritance)))
+                   (when updated-entry
+                     (puthash key updated-entry entries))))))
+           entries))
+
+(defun parsebib--get-xref-fields (target-entry source-entry inheritance)
+  "Return TARGET-ENTRY supplemented with fields inherited from SOURCE-ENTRY.
+TARGET-ENTRY and SOURCE-ENTRY are entry alists.  Fields in
+SOURCE-ENTRY for which TARGET-ENTRY has no value are added to
+TARGET-ENTRY.  Return value is the modified TARGET-ENTRY.
+
+INHERITANCE is an inheritance schema.  It can either be one of
+the symbols `BibTeX' or `biblatex', or it can be an explicit
+inheritance schema.  See the variable
+`parsebib--biblatex-inheritances' for details on the structure of
+such an inheritance schema."
+  (when (and target-entry source-entry)
+    (when (eq inheritance 'biblatex)
+      (setq inheritance parsebib--biblatex-inheritances))
+    (let* ((inheritable-fields
+            (unless (eq inheritance 'BibTeX)
+              (append
+               (apply #'append (mapcar #'cl-third
+                                       (cl-remove-if-not
+                                        (lambda (elem)
+                                          (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
+                                                               (cl-first elem))
+                                               (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
+                                                               (cl-second elem))))
+                                        inheritance)))
+               (cl-third (assoc-string "all" inheritance)))))
+           (new-fields (delq nil (mapcar (lambda (field)
+                                           (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
+                                             (if (and target-field
+                                                      (not (assoc-string target-field target-entry 'case-fold)))
+                                                 (cons target-field (cdr field)))))
+                                         source-entry))))
+      (append target-entry new-fields))))
+
+(defun parsebib--get-target-field (source-field inheritances)
+  "Return the target field for inheritance from SOURCE-FIELD.
+Inheritance is determined by INHERITANCES, which is an alist of
+source/target pairs.  If no inheritance should take place for
+SOURCE-FIELD, the target in the relevant item in INHERITANCES is
+the symbol `none'.  If there is no item for SOURCE-FIELD in
+INHERITANCES, SOURCE-FIELD is returned.  Note that it is valid
+for INHERITANCES to be nil."
+  ;; Note: the argument INHERITANCES differs from the INHERITANCE argument in
+  ;; the previous two functions.  It is a simple alist of (source-field
+  ;; . target-field) pairs.
+  (let ((target-field (cdr (assoc-string source-field inheritances 'case-fold))))
+    (cond
+     ((null target-field)
+      source-field)
+     ((eq target-field 'none)
+      nil)
+     (t target-field))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Clean up TeX markup ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar parsebib-TeX-cleanup-target 'display
   "Target for `parsebib-clean-TeX-markup'.
@@ -375,11 +841,6 @@ For the common cases of replacing a LaTeX command or a literal
 it is faster to use `parsebib-TeX-command-replacement-alist'
 and `parsebib-TeX-literal-replacement-alist' respectively.")
 
-(defvar parsebib-postprocessing-excluded-fields '("file"
-                                                  "url"
-                                                  "doi")
-  "List of fields that should not be post-processed.")
-
 (defun parsebib--TeX-replace-command-or-accent (string)
   "Return the replacement text for the command or accent matched by STRING."
   (let* ((cmd (match-string 1 string))
@@ -425,384 +886,6 @@ calling the cdr on the match (if it is a function)."
                               t t))
              finally return string)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Matching and parsing stuff ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun parsebib--looking-at-goto-end (str &optional match)
-  "Like `looking-at' but move point to the end of the matching string STR.
-MATCH acts just like the argument to MATCH-END, and defaults to
-0. Comparison is done case-insensitively."
-  (or match (setq match 0))
-  (let ((case-fold-search t))
-    (if (looking-at str)
-        (goto-char (match-end match)))))
-
-(defun parsebib--match-paren-forward ()
-  "Move forward to the closing paren matching the opening paren at point.
-This function handles parentheses () and braces {}.  Return t if
-a matching parenthesis was found.  This function puts point
-immediately after the matching parenthesis."
-  (cond
-   ((eq (char-after) ?\{)
-    (parsebib--match-brace-forward))
-   ((eq (char-after) ?\()
-    (bibtex-end-of-entry))))
-
-(defun parsebib--match-delim-forward ()
-  "Move forward to the closing delimiter matching the delimiter at point.
-This function handles braces {} and double quotes \"\". Return t
-if a matching delimiter was found."
-  (let ((result (cond
-                 ((eq (char-after) ?\{)
-                  (parsebib--match-brace-forward))
-                 ((eq (char-after) ?\")
-                  (parsebib--match-quote-forward)))))
-    result))
-
-(defun parsebib--match-brace-forward ()
-  "Move forward to the closing brace matching the opening brace at point."
-  (with-syntax-table bibtex-braced-string-syntax-table
-    (forward-sexp 1)
-    ;; If forward-sexp does not result in an error, we want to return t.
-    t))
-
-(defun parsebib--match-quote-forward ()
-  "Move to the closing double quote matching the quote at point."
-  (with-syntax-table bibtex-quoted-string-syntax-table
-    (forward-sexp 1)
-    ;; If forward-sexp does not result in an error, we want to return t.
-    t))
-
-(defun parsebib--parse-bib-value (limit &optional strings replace-TeX collapse-whitespace)
-  "Parse value at point.
-A value is either a field value or a @String expansion.  Return
-the value as a string.  No parsing is done beyond LIMIT, but note
-that parsing may stop well before LIMIT.
-
-STRINGS, if non-nil, is a hash table of @String definitions.
-@String abbrevs in the value to be parsed are then replaced with
-their expansions.  Additionally, newlines in field values and
-braces or double quotes around field values are removed.
-
-REPLACE-TEX indicates whether TeX markup should be replaced with
-ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details.
-
-If COLLAPSE-WHITESPACE in non-nil, sequences of whitespace in the
-field value are collapsed into a single space."
-  (let (res)
-    (while (and (< (point) limit)
-                (not (looking-at-p ",")))
-      (cond
-       ((looking-at-p "[{\"]")
-        (let ((beg (point)))
-          (parsebib--match-delim-forward)
-          (push (buffer-substring-no-properties beg (point)) res)))
-       ((looking-at parsebib--bibtex-identifier)
-        (push (buffer-substring-no-properties (point) (match-end 0)) res)
-        (goto-char (match-end 0)))
-       ((looking-at "[[:space:]]*#[[:space:]]*")
-        (goto-char (match-end 0)))
-       (t (forward-char 1)))) ; So as not to get stuck in an infinite loop.
-    (setq res (if strings
-                  (string-join (parsebib--expand-strings (nreverse res) strings collapse-whitespace))
-                (string-join (nreverse res) " # ")))
-    (if replace-TeX
-        (parsebib-clean-TeX-markup res)
-      res)))
-
-;;;;;;;;;;;;;;;;;;;;;
-;; Expanding stuff ;;
-;;;;;;;;;;;;;;;;;;;;;
-
-(defun parsebib--expand-strings (strings abbrevs collapse-whitespace)
-  "Expand @Strings abbreviations in STRINGS using expansions in ABBREVS.
-STRINGS is a list of strings.  If a string in STRINGS has an
-expansion in hash table ABBREVS, replace it with its expansion.
-Otherwise, if the string is enclosed in braces {} or double
-quotes \"\", remove the delimiters.  In addition, if
-COLLAPSE-WHITESPACE is non-nil, sequences of whitespace in the
-string are replaced with a single space."
-  (mapcar (lambda (str)
-            (when collapse-whitespace
-              (setq str (replace-regexp-in-string "[[:space:]\t\n\f]+" " " str)))
-            (cond
-             ((gethash str abbrevs))
-             ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
-              (match-string 1 str))
-             (t str)))
-          strings))
-
-(defun parsebib-expand-xrefs (entries inheritance)
-  "Expand cross-referencing items in ENTRIES.
-BibTeX entries in ENTRIES that have a `crossref' field are
-expanded with the fields in the cross-referenced entry.  ENTRIES
-is a hash table with entries.  This hash table is updated with
-the new fields.  The return value of this function is always nil.
-
-INHERITANCE indicates the inheritance schema.  It can be a symbol
-`BibTeX' or `biblatex', or it can be an explicit inheritance
-schema.  See the variable `parsebib--biblatex-inheritances' for
-details on the structure of such an inheritance schema."
-  (maphash (lambda (key fields)
-             (let ((xref (cdr (assoc-string "crossref" fields))))
-               (when xref
-                 (if (string-match-p (concat "\\b[\"{]" parsebib--key-regexp "[\"}]\\b") xref)
-                     (setq xref (substring xref 1 -1)))
-                 (let* ((source (gethash xref entries))
-                        (updated-entry (parsebib--get-xref-fields fields source inheritance)))
-                   (when updated-entry
-                     (puthash key updated-entry entries))))))
-           entries))
-
-(defun parsebib--get-xref-fields (target-entry source-entry inheritance)
-  "Return TARGET-ENTRY supplemented with fields inherited from SOURCE-ENTRY.
-TARGET-ENTRY and SOURCE-ENTRY are entry alists.  Fields in
-SOURCE-ENTRY for which TARGET-ENTRY has no value are added to
-TARGET-ENTRY.  Return value is the modified TARGET-ENTRY.
-
-INHERITANCE is an inheritance schema.  It can either be one of
-the symbols `BibTeX' or `biblatex', or it can be an explicit
-inheritance schema.  See the variable
-`parsebib--biblatex-inheritances' for details on the structure of
-such an inheritance schema."
-  (when (and target-entry source-entry)
-    (when (eq inheritance 'biblatex)
-      (setq inheritance parsebib--biblatex-inheritances))
-    (let* ((inheritable-fields
-            (unless (eq inheritance 'BibTeX)
-              (append
-               (apply #'append (mapcar #'cl-third
-                                       (cl-remove-if-not
-                                        (lambda (elem)
-                                          (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
-                                                               (cl-first elem))
-                                               (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
-                                                               (cl-second elem))))
-                                        inheritance)))
-               (cl-third (assoc-string "all" inheritance)))))
-           (new-fields (delq nil (mapcar (lambda (field)
-                                           (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
-                                             (if (and target-field
-                                                      (not (assoc-string target-field target-entry 'case-fold)))
-                                                 (cons target-field (cdr field)))))
-                                         source-entry))))
-      (append target-entry new-fields))))
-
-(defun parsebib--get-target-field (source-field inheritances)
-  "Return the target field for inheritance from SOURCE-FIELD.
-Inheritance is determined by INHERITANCES, which is an alist of
-source/target pairs.  If no inheritance should take place for
-SOURCE-FIELD, the target in the relevant item in INHERITANCES is
-the symbol `none'.  If there is no item for SOURCE-FIELD in
-INHERITANCES, SOURCE-FIELD is returned.  Note that it is valid
-for INHERITANCES to be nil."
-  ;; Note: the argument INHERITANCES differs from the INHERITANCE argument in
-  ;; the previous two functions.  It is a simple alist of (source-field
-  ;; . target-field) pairs.
-  (let ((target-field (cdr (assoc-string source-field inheritances 'case-fold))))
-    (cond
-     ((null target-field)
-      source-field)
-     ((eq target-field 'none)
-      nil)
-     (t target-field))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Low-level BibTeX/biblatex API ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun parsebib-find-next-item (&optional pos)
-  "Find the first (potential) BibTeX item following POS.
-This function simply searches for an @ at the start of a line,
-possibly preceded by spaces or tabs, followed by a string of
-characters as defined by `parsebib--bibtex-identifier'.  When
-successful, point is placed right after the item's type, i.e.,
-generally on the opening brace or parenthesis following the entry
-type, \"@Comment\", \"@Preamble\" or \"@String\".
-
-The return value is the name of the item as a string, either
-\"Comment\", \"Preamble\" or \"String\", or the entry
-type (without the @). If an item name is found that includes an
-illegal character, an error of type `parsebib-entry-type-error'
-is raised. If no item is found, nil is returned and point is left
-at the end of the buffer.
-
-POS can be a number or a marker and defaults to point."
-  (when pos (goto-char pos))
-  (when (re-search-forward parsebib--entry-start nil 0)
-    (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?") 1)
-        (match-string-no-properties 1)
-      (signal 'parsebib-entry-type-error (list (point))))))
-
-(defun parsebib-read-comment (&optional pos)
-  "Read the @Comment beginning at the line POS is on.
-Return value is the text of the @Comment including the braces.
-For comments that last until the end of the line (i.e., comments
-that are not delimited by braces), the return value includes the
-whitespace between `@comment' and the actual comment text.
-
-If no comment could be found, return nil.
-
-POS can be a number or a marker.  It does not have to be at the
-beginning of a line, but the @Comment entry must start at the
-beginning of the line POS is on.  If POS is nil, it defaults to
-point."
-  (when pos (goto-char pos))
-  (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(comment\\)[[:space:]]*[\(\{]?") 1)
-    (let ((beg (point)))
-      (if (looking-at-p "[[:space:]]*[\(\{]")
-          (progn (skip-chars-forward "[:space:]")
-                 (parsebib--match-paren-forward))
-        (goto-char (line-end-position)))
-      (buffer-substring-no-properties beg (point)))))
-
-(defun parsebib-read-string (&optional pos strings)
-  "Read the @String definition beginning at the line POS is on.
-If a proper abbreviation and expansion are found, they are
-returned as a cons cell (<abbrev> . <expansion>).  Otherwise, nil
-is returned.
-
-POS can be a number or a marker.  It does not have to be at the
-beginning of a line, but the @String entry must start at the
-beginning of the line POS is on.  If POS is nil, it defaults to
-point.
-
-If STRINGS is provided it should be a hash table with string
-abbreviations, which are used to expand abbrevs in the string's
-expansion."
-  (when pos (goto-char pos))
-  (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(string[[:space:]]*\\)[\(\{]") 1)
-    (let ((limit (save-excursion
-                   (parsebib--match-paren-forward)
-                   (point))))
-      (parsebib--looking-at-goto-end (concat "[({]\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*"))
-      (let ((abbr (match-string-no-properties 1)))
-        (when (and abbr (> (length abbr) 0))            ; If we found an abbrev.
-          (let ((expansion (parsebib--parse-bib-value limit strings)))
-            (goto-char limit)
-            (cons abbr expansion)))))))
-
-(defun parsebib-read-preamble (&optional pos)
-  "Read the @Preamble definition at the line POS is on.
-Return the preamble as a string (including the braces surrounding
-the preamble text), or nil if no preamble was found.
-
-POS can be a number or a marker.  It does not have to be at the
-beginning of a line, but the @Preamble must start at the
-beginning of the line POS is on.  If POS is nil, it defaults to
-point."
-  (when pos (goto-char pos))
-  (beginning-of-line)
-  (when (parsebib--looking-at-goto-end (concat parsebib--entry-start "\\(preamble[[:space:]]*\\)[\(\{]") 1)
-    (let ((beg (point)))
-      (when (parsebib--match-paren-forward)
-        (buffer-substring-no-properties beg (point))))))
-
-(defun parsebib--get-hashid-string (fields)
-  "Create a string from the contents of FIELDS to compute a hash id."
-  (cl-loop
-   for field in parsebib-hashid-fields
-   collect (or
-            ;; Remove braces {}.
-            (replace-regexp-in-string "^{\\|}\\'" "" (cdr (assoc-string field fields 'case-fold)))
-            "")
-   into hashid-fields
-   finally return (mapconcat #'identity hashid-fields "")))
-
-(defun parsebib-read-entry (type &optional pos strings fields replace-TeX)
-  "Read a BibTeX entry of type TYPE at the line POS is on.
-TYPE should be a string and should not contain the @
-sign.  The return value is the entry as an alist of (<field> .
-<contents>) cons pairs, or nil if no entry was found.  In this
-alist, the entry key is provided in the field \"=key=\" and the
-entry type in the field \"=type=\".
-
-If `parsebib-hashid-fields' is non-nil, a hash ID is added in the
-field \"=hashid=\".  The hash is computed on the basis of the
-contents of the fields listed in `parsebib-hashid-fields' using
-the function `secure-hash' and the `sha256' algorithm.
-
-POS can be a number or a marker.  It does not have to be at the
-beginning of a line, but the entry must start at the beginning of
-the line POS is on.  If POS is nil, it defaults to point.
-
-ENTRY should not be \"Comment\", \"Preamble\" or \"String\", but
-is otherwise not limited to any set of possible entry types.
-
-If STRINGS is provided, it should be a hash table with string
-abbreviations, which are used to expand abbrevs in the entry's
-fields.
-
-FIELDS is a list of the field names (as strings) to be read and
-included in the result.  Fields not in the list are ignored,
-except \"=key=\" and \"=type=\", which are always included.  Case
-is ignored when comparing fields to the list in FIELDS.  If
-FIELDS is nil, all fields are returned.
-
-REPLACE-TEX indicates whether TeX markup should be replaced with
-ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details."
-  (unless (member-ignore-case type '("comment" "preamble" "string"))
-    (when pos (goto-char pos))
-    (beginning-of-line)
-    (when (parsebib--looking-at-goto-end (concat parsebib--entry-start type "[[:space:]]*[\(\{]"))
-      ;; Find the end of the entry and the beginning of the entry key.
-      (let* ((limit (save-excursion
-                      (backward-char)
-                      (parsebib--match-paren-forward)
-                      (point)))
-             (beg (progn
-                    (skip-chars-forward " \n\t\f") ; Note the space!
-                    (point)))
-             (key (when (parsebib--looking-at-goto-end (concat "\\(" parsebib--key-regexp "\\)[ \t\n\f]*,") 1)
-                    (buffer-substring-no-properties beg (point)))))
-        (or key (setq key "")) ; If no key was found, we pretend it's empty and try to read the entry anyway.
-        (skip-chars-forward "^," limit) ; Move to the comma after the entry key.
-        (let ((fields (cl-loop for field = (parsebib--parse-bibtex-field limit strings fields replace-TeX)
-                               while field
-                               if (consp field) collect field)))
-          (push (cons "=type=" type) fields)
-          (push (cons "=key=" key) fields)
-          (if parsebib-hashid-fields
-              (push (cons "=hashid=" (secure-hash 'sha256 (parsebib--get-hashid-string fields))) fields))
-          (nreverse fields))))))
-
-(defun parsebib--parse-bibtex-field (limit &optional strings fields replace-TeX)
-  "Parse the field starting at point.
-Do not search beyond LIMIT (a buffer position).  Return a
-cons (FIELD . VALUE), or nil if no field was found.
-
-STRINGS is a hash table with string abbreviations, which are used
-to expand abbrevs in the field's value.
-
-FIELDS is a list of the field names (as strings) to be read and
-included in the result.  Fields not in the list are ignored,
-except \"=key=\" and \"=type=\", which are always included.  Case
-is ignored when comparing fields to the list in FIELDS.  If
-FIELDS is nil, all fields are returned.
-
-REPLACE-TEX indicates whether TeX markup should be replaced with
-ASCII/Unicode characters.  See the variable
-`parsebib-TeX-markup-replace-alist' for details."
-  (skip-chars-forward "\"#%'(),={} \n\t\f" limit) ; Move to the first char of the field name.
-  (unless (>= (point) limit)                      ; If we haven't reached the end of the entry.
-    (let ((beg (point)))
-      (if (parsebib--looking-at-goto-end (concat "\\(" parsebib--bibtex-identifier "\\)[[:space:]]*=[[:space:]]*") 1)
-          (let* ((field (buffer-substring-no-properties beg (point)))
-                 (replace-TeX (and replace-TeX
-                                   (not (member-ignore-case field parsebib-postprocessing-excluded-fields))))
-                 (collapse-whitespace (and strings
-                                           (not (member-ignore-case field parsebib-postprocessing-excluded-fields)))))
-            (if (or (not fields)
-                    (member-ignore-case field fields))
-                (cons field (parsebib--parse-bib-value limit strings replace-TeX collapse-whitespace))
-              (parsebib--parse-bib-value limit) ; Skip over the field value.
-              :ignore)))))) ; Ignore this field but keep the `cl-loop' in `parsebib-read-entry' going.
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; High-level BibTeX/biblatex API ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -816,7 +899,7 @@ Return a list of strings, each string a separate @Preamble."
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (when (cl-equalp item "preamble")
-                 (push (parsebib-read-preamble) res)))
+                 (push (parsebib--@Preamble) res)))
       (nreverse res))))
 
 (defun parsebib-collect-comments ()
@@ -828,7 +911,7 @@ Return a list of strings, each string a separate @Comment."
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (when (cl-equalp item "comment")
-                 (push (parsebib-read-comment) res)))
+                 (push (parsebib--@Comment) res)))
       (nreverse (delq nil res)))))
 
 (cl-defun parsebib-collect-strings (&key strings expand-strings)
@@ -848,7 +931,7 @@ STRINGS."
              for item = (parsebib-find-next-item)
              while item do
              (when (cl-equalp item "string")
-               (setq string (parsebib-read-string nil (if expand-strings strings)))
+               (setq string (parsebib-read-string (if expand-strings strings)))
                (puthash (car string) (cdr string) strings)))
     strings))
 
@@ -897,13 +980,16 @@ FIELDS is nil, all fields are returned."
       (setq inheritance (or (parsebib-find-bibtex-dialect)
                             bibtex-dialect
                             'BibTeX)))
+  ;; Ensure =key= and =type= are in `fields'.
+  (if fields
+      (setq fields (append (list "=key=" "=type=" fields))))
   (save-excursion
     (goto-char (point-min))
     (cl-loop with entry = nil
              for entry-type = (parsebib-find-next-item)
              while entry-type do
              (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry entry-type nil strings fields (not (null strings))))
+               (setq entry (parsebib-read-entry fields strings (not (null strings))))
                (if entry
                    (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
     (when inheritance
@@ -919,7 +1005,7 @@ file.  Return nil if no dialect is found."
     (goto-char (point-max))
     (let ((case-fold-search t))
       (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
-        (let ((comment (parsebib-read-comment)))
+        (let ((comment (parsebib--@Comment)))
           (when (and comment
                      (string-match-p "\\`{[ \n\t\r]*Local Variables:" comment)
                      (string-match-p "End:[ \n\t\r]*}\\'" comment)
@@ -977,6 +1063,9 @@ ASCII/Unicode characters.  See the variable
   (or (and (hash-table-p strings)
            (eq (hash-table-test strings) 'equal))
       (setq strings (make-hash-table :test #'equal)))
+  ;; Ensure  =key= and =type= are in `fields'.
+  (if fields
+      (setq fields (append (list "=key=" "=type=") fields)))
   (let ((dialect (or (parsebib-find-bibtex-dialect)
                      bibtex-dialect
                      'BibTeX))
@@ -987,15 +1076,15 @@ ASCII/Unicode characters.  See the variable
                while item do
                (cond
                 ((cl-equalp item "string") ; `cl-equalp' compares strings case-insensitively.
-                 (let ((string (parsebib-read-string nil (if expand-strings strings))))
+                 (let ((string (parsebib-read-string (if expand-strings strings))))
                    (if string
                        (puthash (car string) (cdr string) strings))))
                 ((cl-equalp item "preamble")
-                 (push (parsebib-read-preamble) preambles))
+                 (push (parsebib--@Preamble) preambles))
                 ((cl-equalp item "comment")
-                 (push (parsebib-read-comment) comments))
+                 (push (parsebib--@Comment) comments))
                 ((stringp item)
-                 (let ((entry (parsebib-read-entry item nil (if expand-strings strings) fields replace-TeX)))
+                 (let ((entry (parsebib-read-entry fields (if expand-strings strings) replace-TeX)))
                    (when entry
                      (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
       (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
