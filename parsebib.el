@@ -507,7 +507,7 @@ See the function `parsebib--post-process' for details."
   "Read the @String definition beginning at point.
 Return the definition as a cons cell (<abbrev> . <expansion>).
 
-If STRINGS is provided it should be a hash table with string
+If STRINGS is provided, it should be a hash table with @String
 abbreviations, which are used to expand abbreviations in the
 string's expansion."
   (let* ((definition (parsebib--@String))
