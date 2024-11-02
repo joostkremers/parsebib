@@ -139,25 +139,25 @@ The lower-level API consists of functions that do the actual reading of a BibTeX
 All functions here take an optional position argument, which is the position in the buffer from which they should start reading. The default value is `(point)`.
 
 
-#### `parsebib-find-next-item (&optional pos)` ####
+#### `parsebib-find-next-item ()` ####
 
-Find the first BibTeX item following `pos`, where an item is either a BibTeX entry, or a `@Preamble`, `@String`, or `@Comment`. This function returns the item's type as a string, i.e., either `"preamble"`, `"string"`, or `"comment"`, or the entry type. Note that the `@` is *not* part of the returned string. This function moves point into the correct position to start reading the actual contents of the item, which is done by one of the following functions.
+Find the first BibTeX item following point, where an item is either a BibTeX entry, or a `@Preamble`, `@String`, or `@Comment`. This function returns the item's type as a string, i.e., either `"preamble"`, `"string"`, or `"comment"`, or the entry type. Note that the `@` is *not* part of the returned string. This function moves point into the correct position to start reading the actual contents of the item, which is done by one of the following functions.
 
 
-#### `parsebib-read-entry (type &optional pos strings fields replace-TeX)` ####
-#### `parsebib-read-string (&optional pos strings)` ####
-#### `parsebib-read-preamble (&optional pos)` ####
-#### `parsebib-read-comment (&optional pos)` ####
+#### `parsebib-read-entry (&optional fields strings replace-TeX)` ####
+#### `parsebib-read-string (&optional strings)` ####
+#### `parsebib-read-preamble ()` ####
+#### `parsebib-read-comment ()` ####
 
-These functions do what their names suggest: read one single item of the type specified. Each takes the `pos` argument just mentioned. In addition, `parsebib-read-string` and `parsebib-read-entry` take an extra argument, a hash table of `@string` definitions. When provided, abbreviations in the `@string` definitions or in field values are expanded. Note that `parsebib-read-entry` takes the entry type (as returned by `parsebib-find-next-entry`) as argument.
+These functions do what their names suggest: read one single item of the type specified. `parsebib-read-entry` takes an optional argument `fields`, which is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive.
 
-`parsebib-read-entry` takes two more optional arguments: `fields` and `replace-TeX`. `fields` is a list of names of the fields that should be included in the entries returned. Fields not in this list are ignored (except for `=type=` and `=key=`, which are always included). Note that the field names should be strings; comparison is case-insensitive. `replace-TeX` is a flag indicating whether TeX markup in field values should be replaced with something that's more suitable for display.
+`parsebib-read-entry` also takes an optional  argument `strings`, which is a hash table of `@String` definitions. When provided, abbreviations in the field values of the entry are expanded. In addition, when a `strings` argument is provided, newlines and other whitespace characters in the field value are replaced with a space, and sequences of whitespace are collapsed into a single space, and the braces or quotes around the field value are removed.
 
-The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. One of these pairs contains the entry type, and one contains the entry key. These have the keys `"=type="` and `"=key="`, respectively.
+The last argument, `replace-TeX`, when non-nil, tells `parsebib-read-entry` to prettify TeX markup in the field value. Details are discussed [above](#returning-entries-for-display).
 
-Note that all `parsebib-read*` functions move point to the end of the entry.
+The reading functions return the contents of the item they read: `parsebib-read-preamble` and `parsebib-read-comment` return the text as a string. `parsebib-read-string` returns a cons cell of the form `(<abbrev> . <string>)`, and `parsebib-read-entry` returns the entry as an alist of `(<field> . <value>)` pairs. This alist contains entries for the entry key and the type under the keys `"=key="` and `"=type="`, respectively.
 
-The reading functions return `nil` if they do not find the element they should be reading at the line point is on. Point is nonetheless moved, however. Similarly, `parsebib-read-entry` returns `nil` if it finds no next entry, leaving point at the end of the buffer. Additionally, it will signal an error of type `parsebib-entry-type-error` if it finds something that it deems to be an invalid item name. What is considered to be a valid name is determined by the regexp `parsebib-bibtex-identifier`, which is set to `"[^^\"@\\&$#%',={}() \t\n\f]*"`, meaning that any string not containing whitespace or any of the characters `^"@\&$#%',={}()` is considered a valid identifier.
+Note that all `parsebib-read*` functions move point to the end of the entry. If they cannot parse the item at point, they return an error of type `parsebib-error`, which can be captured, if necessary.
 
 
 #### parsebib-clean-TeX-markup (string) ####
