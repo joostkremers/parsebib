@@ -353,7 +353,7 @@ should be read literally."
   "Parse a BibTeX composed field value.
 A composed value consists of one or more values concatenated
 using the character `#'.  They typically appear after an equal
-sign as field values an in @String definitions as expansions."
+sign as field values and in @String definitions as expansions."
   (let ((val (list (parsebib--value))))
     (while (and (parsebib--char "#" :noerror)
                 (not (eobp)))
@@ -363,15 +363,16 @@ sign as field values an in @String definitions as expansions."
 (defun parsebib--value ()
   "Parse a BibTeX value.
 A value is one component of a composed value (see
-`parsebib--composed-value') and can either be a quoted text or a
-@String abbreviation."
+`parsebib--composed-value') and can either be a piece of quoted
+text (i.e., text in double quotes or braces) or a @String
+abbreviation."
   (parsebib--match '(parsebib--text
                      parsebib--identifier)))
 
 (defun parsebib--assignment ()
   "Parse a BibTeX assignment.
 An assignment is the combination of an identifier, an equal sign
-and a composed value.  An @String definition has exactly one
+and a composed value.  A @String definition has exactly one
 assignment, an entry has a potentially unlimited number."
   (if-let* ((id (parsebib--identifier))
             ((parsebib--char "="))
