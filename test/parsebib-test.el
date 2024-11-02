@@ -1,7 +1,6 @@
 ;;; parsebib-test.el --- Tests for parsebib
 
 (require 'parsebib)
-(require 'rdp)
 
 ;; Note: tests are named with the prefix `parsebib-test-' followed by the name
 ;; of the function being tested, without the `parsebib-' or `parsebib--' prefix.
