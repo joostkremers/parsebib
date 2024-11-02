@@ -349,6 +349,15 @@ should be read literally."
   "Parse a BibTeX identifier."
   (parsebib--symbol parsebib--bibtex-identifier))
 
+(defun parsebib--value ()
+  "Parse a BibTeX value.
+A value is one component of a composed value (see
+`parsebib--composed-value') and can either be a piece of quoted
+text (i.e., text in double quotes or braces) or a @String
+abbreviation."
+  (parsebib--match '(parsebib--text
+                     parsebib--identifier)))
+
 (defun parsebib--composed-value ()
   "Parse a BibTeX composed field value.
 A composed value consists of one or more values concatenated
@@ -359,15 +368,6 @@ sign as field values and in @String definitions as expansions."
                 (not (eobp)))
       (push (parsebib--value) val))
     (nreverse val)))
-
-(defun parsebib--value ()
-  "Parse a BibTeX value.
-A value is one component of a composed value (see
-`parsebib--composed-value') and can either be a piece of quoted
-text (i.e., text in double quotes or braces) or a @String
-abbreviation."
-  (parsebib--match '(parsebib--text
-                     parsebib--identifier)))
 
 (defun parsebib--assignment ()
   "Parse a BibTeX assignment.
