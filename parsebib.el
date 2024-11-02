@@ -391,7 +391,7 @@ A set of assignments makes up the body of an entry."
       ;; error here.
       (ignore-error 'parsebib-error
         (push (parsebib--assignment) fields)))
-    (nreverse fields)))
+    fields))
 
 ;; BibTeX items
 
@@ -438,7 +438,7 @@ actually a list."
             ((parsebib--char "})")))
       (progn (push (cons "=type=" (list type)) fields)
              (push (cons "=key=" (list key)) fields)
-             (nreverse fields))
+             fields)
     (signal 'parsebib-error (list (format "Malformed entry definition at position %d" (point))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
