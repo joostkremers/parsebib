@@ -386,7 +386,7 @@ A set of assignments makes up the body of an entry."
     (while (and (parsebib--char "," :noerror)
                 (not (eobp)))
       (push (parsebib--assignment) fields))
-    fields))
+    (nreverse fields)))
 
 ;; BibTeX items
 
