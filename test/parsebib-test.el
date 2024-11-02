@@ -444,4 +444,162 @@
                           nil nil #'equal)))
            "/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf")))
 
+;;; Test the RDP
+(ert-deftest parsebib-test-@comment ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@Comment{ -*-coding: utf-8 -*- }\n")
+             (goto-char (point-min))
+             (parsebib--@comment))
+           "{ -*-coding: utf-8 -*- }"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@Comment -*-coding: utf-8 -*-\n")
+             (goto-char (point-min))
+             (parsebib--@comment))
+           "-*-coding: utf-8 -*-"))
+  (should (equal
+           (with-temp-buffer
+             (insert "@Comment{\n"
+                     "    Local Variables:\n"
+                     "    bibtex-dialect: biblatex\n"
+                     "    End:\n"
+                     "}\n")
+             (goto-char (point-min))
+             (parsebib--@comment))
+           (concat "{\n"
+                   "    Local Variables:\n"
+                   "    bibtex-dialect: biblatex\n"
+                   "    End:\n"
+                   "}"))))
+
+(ert-deftest parsebib-test-@string ()
+  ;; @String definition with curly braces.
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}")
+             (goto-char (point-min))
+             (parsebib--@string))
+           (list "MGrt" "{Berlin: Mouton de Gruyter}")))
+  ;; @String definition with double quotes.
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{LI = \"Linguistic Inquiry\"}")
+             (goto-char (point-min))
+             (parsebib--@string))
+           (list "LI" "\"Linguistic Inquiry\"")))
+  ;; @String definition with @String abbrev.
+  (should (equal
+           (with-temp-buffer
+             (insert "@String{CUP = {Cambridge: Cambridge } # UP}")
+             (goto-char (point-min))
+             (parsebib--@string))
+           (list "CUP" "{Cambridge: Cambridge }" "UP")))
+  ;; @String definition missing closing curly brace.
+  (should-error (with-temp-buffer
+                  (insert "@String{CUP = {Cambridge: Cambridge } # UP\n")
+                  (goto-char (point-min))
+                  (parsebib--@string))
+                :type 'parsebib-error)
+  ;; @String definition with mismatched brace/parenthesis.
+  (should-error (with-temp-buffer
+                  (insert "@String{CUP = {Cambridge: Cambridge } # UP)\n")
+                  (goto-char (point-min))
+                  (parsebib--@string))
+                :type 'parsebib-error)
+  ;; @String abbreviation without expansion.
+  (should (equal (with-temp-buffer
+                   (insert "@Article{Potapov_2016aa,\n"
+                           "    author = {Potapov, Denis and Sukochev, Fedor and Zanin, Dmitriy},\n"
+                           "    month = dec,\n"
+                           "    title = {{Krein's trace theorem revisited}},\n"
+                           "    url = {http://arxiv.org/abs/1701.00697v1},\n"
+                           "    year = {2016}\n"
+                           "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry nil #s(hash-table size 10 data nil test equal))))
+                     (alist-get "month" results nil nil #'equal)))
+                 "dec")))
+
+(ert-deftest parsebib-test-read-entry-nested-braces ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@article{10.1162/coli_a_00528,\n"
+                     "    title = {Usage-based {Grammar Induction} from {Minimal Cognitive Principles}}\n"
+                     "}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (alist-get "title" results nil nil #'equal)))
+           "{Usage-based {Grammar Induction} from {Minimal Cognitive Principles}}")))
+
+(ert-deftest parsebib-test-read-entry-after-last-field ()
+  ;; The last field in an entry does not have to have a comma after it:
+  (should (equal
+           (with-temp-buffer
+             (insert "@article{10.1162/coli_a_00528,\n"
+                     "    title = {Usage-based Grammar Induction from Minimal Cognitive Principles}\n"
+                     "}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (cons (alist-get "=key=" results nil nil #'equal)
+                     (alist-get "title" results nil nil #'equal))))
+           (cons "10.1162/coli_a_00528"
+                 "{Usage-based Grammar Induction from Minimal Cognitive Principles}")))
+  ;; But there *may* be a comma after the last field:
+  (should (equal
+           (with-temp-buffer
+             (insert "@article{10.1162/coli_a_00528,\n"
+                     "    title = {Usage-based Grammar Induction from Minimal Cognitive Principles},\n"
+                     "}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (cons (alist-get "=key=" results nil nil #'equal)
+                     (alist-get "title" results nil nil #'equal))))
+           (cons "10.1162/coli_a_00528"
+                 "{Usage-based Grammar Induction from Minimal Cognitive Principles}"))))
+
+;; Test braces and parentheses around an entry:
+(ert-deftest parsebib-test-read-entry-parentheses ()
+  ;; Braces.
+  (should (equal
+           (with-temp-buffer
+             (insert "@book{Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (alist-get "=key=" results nil nil #'equal)))
+           "Alexiadou:Haegeman:Stavrou2007"))
+  ;; Parentheses.
+  (should (equal
+           (with-temp-buffer
+             (insert "@book(Alexiadou:Haegeman:Stavrou2007,\n"
+                     "	year = {2007},\n"
+                     "	publisher = MGrt,\n"
+                     "	title = {Noun Phrase in the Generative Perspective},\n"
+                     "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                     "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                     "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf})\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (alist-get "=key=" results nil nil #'equal)))
+           "Alexiadou:Haegeman:Stavrou2007"))
+  ;; Mismatched should error.
+  (should-error (with-temp-buffer
+                  (insert "@book(Alexiadou:Haegeman:Stavrou2007,\n"
+                          "	year = {2007},\n"
+                          "	publisher = MGrt,\n"
+                          "	title = {Noun Phrase in the Generative Perspective},\n"
+                          "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                          "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                          "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+                  (goto-char (point-min))
+                  (let ((results (parsebib-read-entry)))
+                    (alist-get "=key=" results nil nil #'equal)))
+                :type 'parsebib-error))
+
 ;;; parsebib-test.el ends here
