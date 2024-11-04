@@ -61,7 +61,7 @@ id is stored in the entry in the special field `=hashid='.")
 ;; someone complains, I'll keep it this way.
 (defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
 (defconst parsebib--bibtex-key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit BibTeX key.")
-(defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
+(defconst parsebib--bibtex-entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
 (defvar parsebib-postprocessing-excluded-fields '("file"
                                                   "url"
@@ -453,7 +453,7 @@ characters as defined by `parsebib--bibtex-identifier'.
 The return value is the name of the item as a string, either
 \"Comment\", \"Preamble\" or \"String\", or the entry
 type (without the @)."
-  (when (re-search-forward parsebib--entry-start nil 0)
+  (when (re-search-forward parsebib--bibtex-entry-start nil 0)
     (if (looking-at (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?"))
         (prog1 (match-string-no-properties 1)
           (goto-char (pos-bol)))
@@ -1011,7 +1011,7 @@ file.  Return nil if no dialect is found."
   (save-excursion
     (goto-char (point-max))
     (let ((case-fold-search t))
-      (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
+      (when (re-search-backward (concat parsebib--bibtex-entry-start "comment") (- (point-max) 3000) t)
         (let ((comment (parsebib--@comment)))
           (when (and comment
                      (string-match-p "\\`{[ \n\t\r]*Local Variables:" comment)
