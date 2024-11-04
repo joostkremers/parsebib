@@ -517,8 +517,8 @@ string's expansion."
                       (string-join expansion " # ")))
     (cons abbrev expansion)))
 
-(defalias 'parsebib-read-preamble 'parsebib--@Preamble)
-(defalias 'parsebib-read-comment 'parsebib--@Comment)
+(defalias 'parsebib-read-preamble 'parsebib--@preamble)
+(defalias 'parsebib-read-comment 'parsebib--@comment)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Post-processing stuff ;;
