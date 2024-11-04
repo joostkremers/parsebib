@@ -56,11 +56,11 @@ id is stored in the entry in the special field `=hashid='.")
 ;; Regexes describing BibTeX identifiers and keys.  Note that while $ ^ & are
 ;; valid in BibTeX keys, they may nonetheless be problematic, because they are
 ;; special for TeX.  The difference between `parsebib--bibtex-identifier' and
-;; `parsebib--key-regexp' are the parentheses (), which are valid in keys.  It may in
+;; `parsebib--bibtex-key-regexp' are the parentheses (), which are valid in keys.  It may in
 ;; fact not be necessary (or desirable) to distinguish the two, but until
 ;; someone complains, I'll keep it this way.
 (defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
-(defconst parsebib--key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit key.")
+(defconst parsebib--bibtex-key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit BibTeX key.")
 (defconst parsebib--entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
 (defvar parsebib-postprocessing-excluded-fields '("file"
@@ -587,7 +587,7 @@ details on the structure of such an inheritance schema."
   (maphash (lambda (key fields)
              (let ((xref (cdr (assoc-string "crossref" fields))))
                (when xref
-                 (if (string-match-p (concat "\\b[\"{]" parsebib--key-regexp "[\"}]\\b") xref)
+                 (if (string-match-p (concat "\\b[\"{]" parsebib--bibtex-key-regexp "[\"}]\\b") xref)
                      (setq xref (substring xref 1 -1)))
                  (let* ((source (gethash xref entries))
                         (updated-entry (parsebib--get-xref-fields fields source inheritance)))
