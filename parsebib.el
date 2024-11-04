@@ -568,7 +568,8 @@ braces {} or double -quotes \"\", these are removed."
             (when post-process
               (setq str (replace-regexp-in-string "[[:space:]\t\n\f]+" " " str)))
             (cond
-             ((gethash str abbrevs))
+             ((and post-process
+                   (gethash str abbrevs)))
              ((string-match "\\`[\"{]\\(.*?\\)[\"}]\\'" str)
               (match-string 1 str))
              (t str)))
