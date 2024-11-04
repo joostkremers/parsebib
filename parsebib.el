@@ -394,7 +394,7 @@ A set of assignments makes up the body of an entry."
 
 ;; BibTeX items
 
-(defun parsebib--@Comment ()
+(defun parsebib--@comment ()
   "Parse a @Comment.
 Return the contents of the @Comment as a string."
   (parsebib--char "@")
@@ -403,7 +403,7 @@ Return the contents of the @Comment as a string."
                          parsebib--comment-line))
       (signal 'parsebib-error (list (format "Malformed @Comment at position %d" (point))))))
 
-(defun parsebib--@Preamble ()
+(defun parsebib--@preamble ()
   "Parse a @Preamble.
 Return the contents of the @Preamble as a string."
   (parsebib--char "@")
@@ -411,7 +411,7 @@ Return the contents of the @Preamble as a string."
   (or (parsebib--text)
       (signal 'parsebib-error (list (format "Malformed @Preamble at position %d" (point))))))
 
-(defun parsebib--@String ()
+(defun parsebib--@string ()
   "Parse an @String definition.
 Return the definition as a cons cell of the abbreviation and a
 composed value as a list."
@@ -423,7 +423,7 @@ composed value as a list."
       definition
     (signal 'parsebib-error (list (format "Malformed @String definition at position %d" (point))))))
 
-(defun parsebib--entry ()
+(defun parsebib--@entry ()
   "Parse a BibTeX database entry.
 Return the entry as an alist of <field . value> pairs.  Note that
 the value is a list, so that each entry in the returned alist is
@@ -490,7 +490,7 @@ non-nil, it should contain the field names \"=key=\" and
 
 STRINGS and REPLACE-TEX are used to post-process field values.
 See the function `parsebib--post-process' for details."
-  (let ((entry (parsebib--entry)))
+  (let ((entry (parsebib--@entry)))
     (when fields
       (setq entry (seq-filter (lambda (field)
                                 (member-ignore-case (car field) fields))
@@ -509,7 +509,7 @@ Return the definition as a cons cell (<abbrev> . <expansion>).
 If STRINGS is provided, it should be a hash table with @String
 abbreviations, which are used to expand abbreviations in the
 string's expansion."
-  (let* ((definition (parsebib--@String))
+  (let* ((definition (parsebib--@string))
          (abbrev (car definition))
          (expansion (cdr definition)))
     (setq expansion (if strings
@@ -906,7 +906,7 @@ Return a list of strings, each string a separate @Preamble."
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (when (cl-equalp item "preamble")
-                 (push (parsebib--@Preamble) res)))
+                 (push (parsebib--@preamble) res)))
       (nreverse res))))
 
 (defun parsebib-collect-comments ()
@@ -918,7 +918,7 @@ Return a list of strings, each string a separate @Comment."
       (cl-loop for item = (parsebib-find-next-item)
                while item do
                (when (cl-equalp item "comment")
-                 (push (parsebib--@Comment) res)))
+                 (push (parsebib--@comment) res)))
       (nreverse (delq nil res)))))
 
 (cl-defun parsebib-collect-strings (&key strings expand-strings)
@@ -1012,7 +1012,7 @@ file.  Return nil if no dialect is found."
     (goto-char (point-max))
     (let ((case-fold-search t))
       (when (re-search-backward (concat parsebib--entry-start "comment") (- (point-max) 3000) t)
-        (let ((comment (parsebib--@Comment)))
+        (let ((comment (parsebib--@comment)))
           (when (and comment
                      (string-match-p "\\`{[ \n\t\r]*Local Variables:" comment)
                      (string-match-p "End:[ \n\t\r]*}\\'" comment)
@@ -1087,9 +1087,9 @@ ASCII/Unicode characters.  See the variable
                    (if string
                        (puthash (car string) (cdr string) strings))))
                 ((cl-equalp item "preamble")
-                 (push (parsebib--@Preamble) preambles))
+                 (push (parsebib--@preamble) preambles))
                 ((cl-equalp item "comment")
-                 (push (parsebib--@Comment) comments))
+                 (push (parsebib--@comment) comments))
                 ((stringp item)
                  (let ((entry (parsebib-read-entry fields (if expand-strings strings) replace-TeX)))
                    (when entry
