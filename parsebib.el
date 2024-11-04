@@ -513,7 +513,7 @@ string's expansion."
          (abbrev (car definition))
          (expansion (cdr definition)))
     (setq expansion (if strings
-                        (string-join (parsebib--expand-strings expansion strings t))
+                        (string-join (parsebib--post-process-strings expansion strings t))
                       (string-join expansion " # ")))
     (cons abbrev expansion)))
 
@@ -549,22 +549,23 @@ being a single string."
          (value (cdr field))
          (post-process (not (member-ignore-case name parsebib-postprocessing-excluded-fields))))
     (setq value (if strings
-                    (string-join (parsebib--expand-strings value strings post-process))
+                    (string-join (parsebib--post-process-strings value strings post-process))
                   (string-join value " # ")))
     (when (and replace-TeX post-process)
       (setq value (parsebib-clean-TeX-markup value)))
     (cons name value)))
 
-(defun parsebib--expand-strings (strings abbrevs collapse-whitespace)
-  "Expand @Strings abbreviations in STRINGS using expansions in ABBREVS.
-STRINGS is a list of strings.  If a string in STRINGS has an
-expansion in hash table ABBREVS, replace it with its expansion.
-Otherwise, if the string is enclosed in braces {} or double
-quotes \"\", remove the delimiters.  In addition, if
-COLLAPSE-WHITESPACE is non-nil, sequences of whitespace in the
-string are replaced with a single space."
+(defun parsebib--post-process-strings (strings abbrevs post-process)
+  "Post-process the strings in STRINGS.
+STRINGS is a list of strings, ABBREVS a hash table with @String
+definitions.  Post-processing involves three changes: First,
+sequences of whitespace are collapsed into a single space.
+Second, if a string has an expansion in ABBREVS, it is replaced
+with the expansion.  Both these changes are only applied if
+POST-PROCESS is non-nil.  Lastly, if the string is enclosed in
+braces {} or double -quotes \"\", these are removed."
   (mapcar (lambda (str)
-            (when collapse-whitespace
+            (when post-process
               (setq str (replace-regexp-in-string "[[:space:]\t\n\f]+" " " str)))
             (cond
              ((gethash str abbrevs))
