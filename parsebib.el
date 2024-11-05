@@ -1125,7 +1125,7 @@ except `id' and `type', which are always included.  If FIELDS is
 nil, all fields are returned.
 
 If a JSON object is encountered that does not have an \"id\"
-field, a `parsebib-entry-type-error' is raised."
+field, a `parsebib-error' is raised."
   (or (and (hash-table-p entries)
            (eq (hash-table-test entries) 'equal))
       (setq entries (make-hash-table :test #'equal)))
@@ -1150,7 +1150,7 @@ field, a `parsebib-entry-type-error' is raised."
       ;; the first non-whitespace character in the file must be an opening
       ;; bracket;
       (if (not (looking-at-p "[\n\t ]*\\["))
-          (error "[Parsebib] Not a valid CSL-JSON file"))
+          (error "[Parsebib Error] Not a valid CSL-JSON file"))
       (let ((continue t))
         (while continue
           ;; We also know that the first non-whitespace character after that
@@ -1167,7 +1167,7 @@ field, a `parsebib-entry-type-error' is raised."
                                 (parsebib-stringify-json entry year-only)
                               entry)
                          entries))
-            (signal 'parsebib-entry-type-error (list (point))))
+            (signal 'parsebib-error (list (format "Malformed JSON entry at position %d" (point)))))
           ;; Parsing an entry moves point to the end of the entry.  The next
           ;; character must be a comma if there is another entry.  If we're not
           ;; seeing a comma, we've reached the end of the file:
