@@ -308,9 +308,11 @@ character."
       (buffer-substring-no-properties beg (point)))))
 
 (defun parsebib--match (rules)
-  "Check if any of RULES matches at point.
-If a rule matches, apply it and return the result.  Otherwise,
-signal an error."
+  "Check if a rule in RULES matches at point.
+Apply the first rule that matches and return the result.  If no
+rule matches, signal an error.
+
+RULES is a list of symbols, each naming a parsing rule."
   (parsebib--skip-whitespace)
   (let ((start-pos (point))
         last-error)
