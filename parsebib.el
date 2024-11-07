@@ -1157,8 +1157,8 @@ field, a `parsebib-error' is raised."
           ;; We also know that the first non-whitespace character after that
           ;; must be an opening brace:
           (skip-chars-forward "^{")
-          (if-let ((entry (funcall parse))
-                   (id (alist-get 'id entry)))
+          (if-let* ((entry (funcall parse))
+                    (id (alist-get 'id entry)))
               (progn
                 (when fields
                   (setq entry (seq-filter (lambda (elt)
@@ -1297,9 +1297,9 @@ try to return only a year (in a date range, just the year of the
 first date).  If no year part is present, SHORT returns
 \"XXXX\"."
   (if short
-      (if-let ((date-parts (alist-get 'date-parts date))
-               (first-date (aref date-parts 0))
-               (year (aref first-date 0)))
+      (if-let* ((date-parts (alist-get 'date-parts date))
+                (first-date (aref date-parts 0))
+                (year (aref first-date 0)))
           (format "%s" year)
         "XXXX")
 
@@ -1307,7 +1307,7 @@ first date).  If no year part is present, SHORT returns
     (setq date (copy-sequence date))
 
     ;; Set start-date and end-date.
-    (when-let ((date-parts (alist-get 'date-parts date)))
+    (when-let* ((date-parts (alist-get 'date-parts date)))
       (let* ((start-date (aref date-parts 0))
              (end-date (if (= (length date-parts) 2)
                            (aref date-parts 1))))
@@ -1318,13 +1318,13 @@ first date).  If no year part is present, SHORT returns
                            (parsebib--json-stringify-date-part end-date)))))
 
     ;; Set season.
-    (when-let ((season (alist-get 'season date)))
+    (when-let* ((season (alist-get 'season date)))
       (if (numberp season)
           (setf (alist-get 'season date)
                 (aref ["Spring" "Summer" "Autumn" "Winter"] (1- season)))))
 
     ;; Set circa.
-    (when-let ((circa (alist-get 'circa date)))
+    (when-let* ((circa (alist-get 'circa date)))
       (setf (alist-get 'circa date) "ca."))
 
     ;; Now convert the date.
