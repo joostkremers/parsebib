@@ -474,29 +474,57 @@
                    "}"))))
 
 (ert-deftest parsebib-test-@string ()
+  ;; @String definition with curly braces.
   (should (equal
            (with-temp-buffer
              (insert "@String{MGrt = {Berlin: Mouton de Gruyter}}")
              (goto-char (point-min))
              (parsebib--@string))
            (list "MGrt" "{Berlin: Mouton de Gruyter}")))
+  ;; @String definition with double quotes.
   (should (equal
            (with-temp-buffer
              (insert "@String{LI = \"Linguistic Inquiry\"}")
              (goto-char (point-min))
              (parsebib--@string))
            (list "LI" "\"Linguistic Inquiry\"")))
+  ;; @String definition with @String abbrev.
   (should (equal
            (with-temp-buffer
              (insert "@String{CUP = {Cambridge: Cambridge } # UP}")
              (goto-char (point-min))
              (parsebib--@string))
            (list "CUP" "{Cambridge: Cambridge }" "UP")))
+  ;; @String definition missing closing curly brace.
   (should-error (with-temp-buffer
                   (insert "@String{CUP = {Cambridge: Cambridge } # UP\n")
                   (goto-char (point-min))
                   (parsebib--@string))
-                :type 'parsebib-error))
+                :type 'parsebib-error)
+  ;; @String abbreviation without expansion.
+  (should (equal (with-temp-buffer
+                   (insert "@Article{Potapov_2016aa,\n"
+                           "    author = {Potapov, Denis and Sukochev, Fedor and Zanin, Dmitriy},\n"
+                           "    month = dec,\n"
+                           "    title = {{Krein's trace theorem revisited}},\n"
+                           "    url = {http://arxiv.org/abs/1701.00697v1},\n"
+                           "    year = {2016}\n"
+                           "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry nil #s(hash-table size 10 data nil test equal))))
+                     (alist-get "month" results nil nil #'equal)))
+                 "dec")))
+
+(ert-deftest parsebib-test-read-entry-nested-braces ()
+  (should (equal
+           (with-temp-buffer
+             (insert "@article{10.1162/coli_a_00528,\n"
+                     "    title = {Usage-based {Grammar Induction} from {Minimal Cognitive Principles}}\n"
+                     "}\n")
+             (goto-char (point-min))
+             (let ((results (parsebib-read-entry)))
+               (alist-get "title" results nil nil #'equal)))
+           "{Usage-based {Grammar Induction} from {Minimal Cognitive Principles}}")))
 
 (ert-deftest parsebib-test-read-entry-after-last-field ()
   ;; The last field in an entry does not have to have a comma after it:
