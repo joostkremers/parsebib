@@ -427,9 +427,8 @@ composed value as a list."
 
 (defun parsebib--@entry ()
   "Parse a BibTeX database entry.
-Return the entry as an alist of <field . value> pairs.  Note that
-the value is a list, so that each entry in the returned alist is
-actually a list."
+Return the entry as an alist of <field . value> pairs, where
+<field> is a string and <value> is a list of strings."
   (if-let* (((parsebib--char "@"))
             (type (parsebib--identifier))
             (open (parsebib--char "{("))
