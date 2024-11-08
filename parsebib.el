@@ -419,9 +419,9 @@ Return the definition as a cons cell of the abbreviation and a
 composed value as a list."
   (if-let* (((parsebib--char "@"))
             ((parsebib--keyword '("string")))
-            ((parsebib--char "{("))
+            (open (parsebib--char "{("))
             (definition (parsebib--assignment))
-            ((parsebib--char "})")))
+            ((parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
       definition
     (signal 'parsebib-error (list (format "Malformed @String definition at position %d" (point))))))
 
@@ -432,11 +432,11 @@ the value is a list, so that each entry in the returned alist is
 actually a list."
   (if-let* (((parsebib--char "@"))
             (type (parsebib--identifier))
-            ((parsebib--char "{("))
+            (open (parsebib--char "{("))
             (key (parsebib--identifier))
             ((parsebib--char ","))
             (fields (parsebib--fields))
-            ((parsebib--char "})")))
+            ((parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
       (progn (push (cons "=type=" (list type)) fields)
              (push (cons "=key=" (list key)) fields)
              fields)

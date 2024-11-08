@@ -501,6 +501,12 @@
                   (goto-char (point-min))
                   (parsebib--@string))
                 :type 'parsebib-error)
+  ;; @String definition with mismatched brace/parenthesis.
+  (should-error (with-temp-buffer
+                  (insert "@String{CUP = {Cambridge: Cambridge } # UP)\n")
+                  (goto-char (point-min))
+                  (parsebib--@string))
+                :type 'parsebib-error)
   ;; @String abbreviation without expansion.
   (should (equal (with-temp-buffer
                    (insert "@Article{Potapov_2016aa,\n"
@@ -554,6 +560,7 @@
 
 ;; Test braces and parentheses around an entry:
 (ert-deftest parsebib-test-read-entry-parentheses ()
+  ;; Braces.
   (should (equal
            (with-temp-buffer
              (insert "@book{Alexiadou:Haegeman:Stavrou2007,\n"
@@ -567,6 +574,7 @@
              (let ((results (parsebib-read-entry)))
                (alist-get "=key=" results nil nil #'equal)))
            "Alexiadou:Haegeman:Stavrou2007"))
+  ;; Parentheses.
   (should (equal
            (with-temp-buffer
              (insert "@book(Alexiadou:Haegeman:Stavrou2007,\n"
@@ -579,6 +587,19 @@
              (goto-char (point-min))
              (let ((results (parsebib-read-entry)))
                (alist-get "=key=" results nil nil #'equal)))
-           "Alexiadou:Haegeman:Stavrou2007")))
+           "Alexiadou:Haegeman:Stavrou2007"))
+  ;; Mismatched should error.
+  (should-error (with-temp-buffer
+                  (insert "@book(Alexiadou:Haegeman:Stavrou2007,\n"
+                          "	year = {2007},\n"
+                          "	publisher = MGrt,\n"
+                          "	title = {Noun Phrase in the Generative Perspective},\n"
+                          "	author = {Alexiadou, Artemis and Haegeman, Liliane and Stavrou, Melita},\n"
+                          "	timestamp = {2013-09-25 12:00:00 (CET)},\n"
+                          "	file = {a/Alexiadou_Haegeman_Stavrou2007.pdf}}\n")
+                  (goto-char (point-min))
+                  (let ((results (parsebib-read-entry)))
+                    (alist-get "=key=" results nil nil #'equal)))
+                :type 'parsebib-error))
 
 ;;; parsebib-test.el ends here
