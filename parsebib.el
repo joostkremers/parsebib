@@ -204,11 +204,6 @@ target field is set to the symbol `none'.")
   "Skip whitespace."
   (skip-chars-forward " \n\r\t\f\v"))
 
-(defun parsebib--comment-line ()
-  "Read a single-line comment and return it."
-  (prog1 (buffer-substring-no-properties (point) (pos-eol))
-    (forward-line 1)))
-
 (defun parsebib--char (chars &optional noerror)
   "Read the character at point.
 CHARS is a string and should describe a set of characters, as in
@@ -306,6 +301,11 @@ character."
     (if continue
         (signal 'parsebib-error (list (format "Opening %c at position %d has no closing %c" delim beg delim)))
       (buffer-substring-no-properties beg (point)))))
+
+(defun parsebib--comment-line ()
+  "Read a single-line comment and return it."
+  (prog1 (buffer-substring-no-properties (point) (pos-eol))
+    (forward-line 1)))
 
 (defun parsebib--match (rules)
   "Check if a rule in RULES matches at point.
