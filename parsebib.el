@@ -217,10 +217,10 @@ case return nil."
         (forward-char 1)
         char)
     (unless noerror
-      (signal 'parsebib-error (list (format "Expected [%s], got `%c' at position %d"
+      (signal 'parsebib-error (list (format "Expected [%s], got `%c' at position %d,%d"
                                             chars
                                             (following-char)
-                                            (point)))))))
+                                            (line-number-at-pos) (current-column)))))))
 
 (defun parsebib--keyword (keywords &optional noerror)
   "Read the keyword following point.
@@ -235,10 +235,10 @@ case return nil."
           (goto-char (match-end 0))
           keyword))
     (unless noerror
-      (signal 'parsebib-error (list (format "Expected one of %s, got `%c' at position %d"
+      (signal 'parsebib-error (list (format "Expected one of %s, got `%c' at position %d,%d"
                                             keywords
                                             (char-after)
-                                            (point)))))))
+                                            (line-number-at-pos) (current-column)))))))
 
 (defun parsebib--symbol (regexp &optional noerror)
   "Read a symbol and return it.
@@ -251,7 +251,8 @@ NOERROR is non-nil, in which case return nil."
         (goto-char (match-end 0))
         (match-string-no-properties 0))
     (unless noerror
-      (signal 'parsebib-error (list (format "Illegal identifier at position %d" (point)))))))
+      (signal 'parsebib-error (list (format "Illegal identifier at position %d,%d"
+                                            (line-number-at-pos) (current-column)))))))
 
 (defun parsebib--seq-delim (open close esc)
   "Read a delimited sequence.
@@ -278,9 +279,13 @@ sequences)."
         (unless (eq (char-before) esc)
           (setq n-braces (1- n-braces)))))
       (ignore-error 'end-of-buffer (forward-char 1)))
-    (if (> n-braces 0)
-        (signal 'parsebib-error (list (format "Opening %c at position %d has no closing %c" open beg close)))
-      (buffer-substring-no-properties beg (point)))))
+    (if (= n-braces 0)
+        (buffer-substring-no-properties beg (point))
+      (goto-char beg) ; So we can determine line and column number.
+      (signal 'parsebib-error (list (format "Opening %c at position %d,%d has no closing %c"
+                                            open
+                                            (line-number-at-pos) (current-column)
+                                            close))))))
 
 (defun parsebib--string (delim esc)
   "Read a string delimited by DELIM.
@@ -298,9 +303,13 @@ character."
       (unless (eq (char-before) esc)
         (setq continue nil))
       (forward-char 1))
-    (if continue
-        (signal 'parsebib-error (list (format "Opening %c at position %d has no closing %c" delim beg delim)))
-      (buffer-substring-no-properties beg (point)))))
+    (if (not continue)
+        (buffer-substring-no-properties beg (point))
+      (goto-char beg) ; So we can determine line and column number.
+      (signal 'parsebib-error (list (format "Opening %c at position %d,%d has no closing %c"
+                                            delim
+                                            (line-number-at-pos) (current-column)
+                                            delim))))))
 
 (defun parsebib--comment-line ()
   "Read a single-line comment and return it."
@@ -379,7 +388,8 @@ assignment, an entry has a potentially unlimited number."
             ((parsebib--char "="))
             (val (parsebib--composed-value)))
       (cons id val)
-    (signal 'parsebib-error (list (format "Malformed key=value assignment at position %d" (point))))))
+    (signal 'parsebib-error (list (format "Malformed key=value assignment at position %d,%d"
+                                          (line-number-at-pos) (current-column))))))
 
 (defun parsebib--fields ()
   "Parse a set of BibTeX assignments.
@@ -403,7 +413,8 @@ Return the contents of the @Comment as a string."
   (parsebib--keyword '("comment"))
   (or (parsebib--match '(parsebib--text
                          parsebib--comment-line))
-      (signal 'parsebib-error (list (format "Malformed @Comment at position %d" (point))))))
+      (signal 'parsebib-error (list (format "Malformed @Comment at position %d,%d"
+                                            (line-number-at-pos) (current-column))))))
 
 (defun parsebib--@preamble ()
   "Parse a @Preamble.
@@ -411,7 +422,8 @@ Return the contents of the @Preamble as a string."
   (parsebib--char "@")
   (parsebib--keyword '("preamble"))
   (or (parsebib--text)
-      (signal 'parsebib-error (list (format "Malformed @Preamble at position %d" (point))))))
+      (signal 'parsebib-error (list (format "Malformed @Preamble at position %d,%d"
+                                            (line-number-at-pos) (current-column))))))
 
 (defun parsebib--@string ()
   "Parse an @String definition.
@@ -423,7 +435,8 @@ composed value as a list."
             (definition (parsebib--assignment))
             ((parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
       definition
-    (signal 'parsebib-error (list (format "Malformed @String definition at position %d" (point))))))
+    (signal 'parsebib-error (list (format "Malformed @String definition at position %d,%d"
+                                          (line-number-at-pos) (current-column))))))
 
 (defun parsebib--@entry ()
   "Parse a BibTeX database entry.
@@ -439,7 +452,8 @@ Return the entry as an alist of <field . value> pairs, where
       (progn (push (cons "=type=" (list type)) fields)
              (push (cons "=key=" (list key)) fields)
              fields)
-    (signal 'parsebib-error (list (format "Malformed entry definition at position %d" (point))))))
+    (signal 'parsebib-error (list (format "Malformed entry definition at position %d,%d"
+                                          (line-number-at-pos) (current-column))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level BibTeX/biblatex API ;;
@@ -458,7 +472,8 @@ type (without the @)."
     (if (looking-at (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?"))
         (prog1 (match-string-no-properties 1)
           (goto-char (pos-bol)))
-      (signal 'parsebib-error (list (format "Could not find BibTeX entry at position %d" (point)))))))
+      (signal 'parsebib-error (list (format "Could not find BibTeX entry at position %d,%d"
+                                            (line-number-at-pos) (current-column)))))))
 
 (defun parsebib--get-hashid-string (fields)
   "Create a string from the contents of FIELDS to compute a hash id."
@@ -1168,7 +1183,8 @@ field, a `parsebib-error' is raised."
                                 (parsebib-stringify-json entry year-only)
                               entry)
                          entries))
-            (signal 'parsebib-error (list (format "Malformed JSON entry at position %d" (point)))))
+            (signal 'parsebib-error (list (format "Malformed JSON entry at position %d,%d"
+                                                  (line-number-at-pos) (current-column)))))
           ;; Parsing an entry moves point to the end of the entry.  The next
           ;; character must be a comma if there is another entry.  If we're not
           ;; seeing a comma, we've reached the end of the file:
