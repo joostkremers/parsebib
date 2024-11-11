@@ -602,4 +602,93 @@
                     (alist-get "=key=" results nil nil #'equal)))
                 :type 'parsebib-error))
 
+;; Test unbalanced parentheses in field values.
+(ert-deftest parsebib-test-unbalanced-parentheses-in-fields ()
+  ;; (ASCII) LEFT PARENTHESIS
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@article{Title,\n"
+                    "    title = {{Title}},\n"
+                    "    author = {Author},\n"
+                    "    year = {1970},\n"
+                    "    journal = {Journal},\n"
+                    "    abstract = {(}\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (alist-get "abstract" results nil nil #'equal)))
+                 "{(}"))
+  ;; (ASCII) RIGHT PARENTHESIS
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@article{Title,\n"
+                    "    title = {{Title}},\n"
+                    "    author = {Author},\n"
+                    "    year = {1970},\n"
+                    "    journal = {Journal},\n"
+                    "    abstract = {)}\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (alist-get "abstract" results nil nil #'equal)))
+                 "{)}"))
+  ;; (ASCII) LEFT and RIGHT CURLY BRACKET with double quotes as delimiters.
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@article{Title,\n"
+                    "    title = {{Title}},\n"
+                    "    author = {Author},\n"
+                    "    year = {1970},\n"
+                    "    journal = \"Journal{\",\n"
+                    "    abstract = \"Abstract}\"\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (cons (alist-get "journal" results nil nil #'equal)
+                           (alist-get "abstract" results nil nil #'equal))))
+                 (cons "\"Journal{\"" "\"Abstract}\"")))
+  ;; (CJK) FULLWIDTH LEFT PARENTHESIS
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@article{Title,\n"
+                    "    title = {{Title}},\n"
+                    "    author = {Author},\n"
+                    "    year = {1970},\n"
+                    "    journal = {Journal},\n"
+                    "    abstract = {（}\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (alist-get "abstract" results nil nil #'equal)))
+                 "{（}"))
+  ;; (CJK) FULLWIDTH LEFT PARENTHESIS
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@article{Title,\n"
+                    "    title = {{Title}},\n"
+                    "    author = {Author},\n"
+                    "    year = {1970},\n"
+                    "    journal = {Journal},\n"
+                    "    abstract = {）}\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (alist-get "abstract" results nil nil #'equal)))
+                 "{）}"))
+  ;; (CJK) FULLWIDTH LEFT and RIGHT PARENTHESIS with double quotes as delimiters.
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@article{Title,\n"
+                    "    title = {{Title}},\n"
+                    "    author = {Author},\n"
+                    "    year = {1970},\n"
+                    "    journal = \"Journal（\",\n"
+                    "    abstract = \"Abstract）\"\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (cons (alist-get "journal" results nil nil #'equal)
+                           (alist-get "abstract" results nil nil #'equal))))
+                 (cons "\"Journal（\"" "\"Abstract）\""))))
+
 ;;; parsebib-test.el ends here
