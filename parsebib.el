@@ -385,7 +385,7 @@ An assignment is the combination of an identifier, an equal sign
 and a composed value.  A @String definition has exactly one
 assignment, an entry has a potentially unlimited number."
   (if-let* ((id (parsebib--identifier))
-            ((parsebib--char "="))
+            (_ (parsebib--char "="))
             (val (parsebib--composed-value)))
       (cons id val)
     (signal 'parsebib-error (list (format "Malformed key=value assignment at position %d,%d"
@@ -429,11 +429,11 @@ Return the contents of the @Preamble as a string."
   "Parse an @String definition.
 Return the definition as a cons cell of the abbreviation and a
 composed value as a list."
-  (if-let* (((parsebib--char "@"))
-            ((parsebib--keyword '("string")))
+  (if-let* ((_ (parsebib--char "@"))
+            (_ (parsebib--keyword '("string")))
             (open (parsebib--char "{("))
             (definition (parsebib--assignment))
-            ((parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
+            (_ (parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
       definition
     (signal 'parsebib-error (list (format "Malformed @String definition at position %d,%d"
                                           (line-number-at-pos) (current-column))))))
@@ -442,13 +442,13 @@ composed value as a list."
   "Parse a BibTeX database entry.
 Return the entry as an alist of <field . value> pairs, where
 <field> is a string and <value> is a list of strings."
-  (if-let* (((parsebib--char "@"))
+  (if-let* ((_ (parsebib--char "@"))
             (type (parsebib--identifier))
             (open (parsebib--char "{("))
             (key (parsebib--identifier))
-            ((parsebib--char ","))
+            (_ (parsebib--char ","))
             (fields (parsebib--fields))
-            ((parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
+            (_ (parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
       (progn (push (cons "=type=" (list type)) fields)
              (push (cons "=key=" (list key)) fields)
              fields)
