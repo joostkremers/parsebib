@@ -471,7 +471,8 @@ return the name of the item as a string, either \"Comment\",
 If no item is found, move point to the end of the buffer."
   (when (re-search-forward parsebib--bibtex-entry-start nil 0)
     (if (looking-at (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?"))
-        (prog1 (match-string-no-properties 1)
+        (prog1
+            (match-string-no-properties 1)
           (goto-char (pos-bol)))
       (signal 'parsebib-error (list (format "Could not find BibTeX entry at position %d,%d"
                                             (line-number-at-pos) (current-column)))))))
