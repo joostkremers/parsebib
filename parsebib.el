@@ -465,9 +465,10 @@ This function simply searches for an @ at the start of a line,
 possibly preceded by spaces or tabs, followed by a string of
 characters as defined by `parsebib--bibtex-identifier'.
 
-The return value is the name of the item as a string, either
-\"Comment\", \"Preamble\" or \"String\", or the entry
-type (without the @)."
+If an item is found, position point at the start of the line and
+return the name of the item as a string, either \"Comment\",
+\"Preamble\" or \"String\", or the entry type (without the @).
+If no item is found, move point to the end of the buffer."
   (when (re-search-forward parsebib--bibtex-entry-start nil 0)
     (if (looking-at (concat "\\(" parsebib--bibtex-identifier "\\)" "[[:space:]]*[\(\{]?"))
         (prog1 (match-string-no-properties 1)
