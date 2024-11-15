@@ -490,9 +490,11 @@ If no item is found, move point to the end of the buffer."
 
 (defun parsebib-read-entry (&optional fields strings replace-TeX)
   "Read a BibTeX entry starting at point.
-Return an alist of (<field> .  <contents>) conses, or nil if no
-entry was found.  The returned alist provides the entry key in
-the field \"=key=\" and the entry type in the field \"=type=\".
+Point should be positioned before the `@'-character that starts
+the entry, with possibly whitespace intervening.  Return an alist
+of (<field> .  <contents>) conses, or nil if no entry was found.
+The returned alist provides the entry key in the field \"=key=\"
+and the entry type in the field \"=type=\".
 
 If `parsebib-hashid-fields' is non-nil, a hash ID is added in the
 field \"=hashid=\".  The hash is computed on the basis of the
