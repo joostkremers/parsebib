@@ -225,20 +225,21 @@ case return nil."
 (defun parsebib--keyword (keywords &optional noerror)
   "Read the keyword following point.
 KEYWORDS is a list of allowed keywords.  If the text following
-point matches one of KEYWORDS, return it and move point.
-Otherwise signal an error, unless NOERROR is non-nil, in which
-case return nil."
+point matches one of KEYWORDS (case-insensitively), return it and
+move point.  Otherwise signal an error, unless NOERROR is
+non-nil, in which case return nil."
   (parsebib--skip-whitespace)
-  (if (looking-at (regexp-opt keywords))
-      (let ((keyword (match-string-no-properties 0)))
-        (progn
-          (goto-char (match-end 0))
-          keyword))
-    (unless noerror
-      (signal 'parsebib-error (list (format "Expected one of %s, got `%c' at position %d,%d"
-                                            keywords
-                                            (char-after)
-                                            (line-number-at-pos) (current-column)))))))
+  (let ((case-fold-search t))
+    (if (looking-at (regexp-opt keywords))
+        (let ((keyword (match-string-no-properties 0)))
+          (progn
+            (goto-char (match-end 0))
+            keyword))
+      (unless noerror
+        (signal 'parsebib-error (list (format "Expected one of %s, got `%c' at position %d,%d"
+                                              keywords
+                                              (char-after)
+                                              (line-number-at-pos) (current-column))))))))
 
 (defun parsebib--symbol (regexp &optional noerror)
   "Read a symbol and return it.
