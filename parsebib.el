@@ -204,18 +204,16 @@ target field is set to the symbol `none'.")
   "Skip whitespace."
   (skip-chars-forward " \n\r\t\f\v"))
 
-(defun parsebib--char (chars &optional noerror)
+(defun parsebib--chars (chars &optional noerror)
   "Read the character at point.
-CHARS is a string and should describe a set of characters, as in
-a character alternative in `[...]' in a regular expression.  If
-the character at point matches CHARS, return it and move point,
-otherwise signal an error, unless NOERROR is non-nil, in which
-case return nil."
+CHARS is a list of characters.  If the character at point matches
+a character in CHARS, return it and move point, otherwise signal
+an error, unless NOERROR is non-nil, in which case return nil."
   (parsebib--skip-whitespace)
-  (if (looking-at-p (concat "[" chars "]"))
-      (let ((char (char-after)))
-        (forward-char 1)
-        char)
+  (if (memq (char-after) chars)
+      (prog1
+          (char-after)
+        (forward-char 1))
     (unless noerror
       (signal 'parsebib-error (list (format "Expected [%s], got `%c' at position %d,%d"
                                             chars
@@ -268,7 +266,7 @@ sequences)."
   (let ((beg (point))
         (n-braces 1)
         (skip-chars (format "^%c%c" open close)))
-    (parsebib--char (char-to-string open))
+    (parsebib--chars (list open))
     (while (and (> n-braces 0)
                 (not (eobp)))
       (skip-chars-forward skip-chars)
@@ -297,7 +295,7 @@ character."
   (let ((beg (point))
         (continue t)
         (skip-chars (format "^%c" delim)))
-    (parsebib--char (char-to-string delim))
+    (parsebib--chars (list delim))
     (while (and continue
                 (not (eobp)))
       (skip-chars-forward skip-chars)
@@ -375,7 +373,7 @@ A composed value consists of one or more values concatenated
 using the character `#'.  They typically appear after an equal
 sign as field values and in @String definitions as expansions."
   (let ((val (list (parsebib--value))))
-    (while (and (parsebib--char "#" :noerror)
+    (while (and (parsebib--chars '(?#) :noerror)
                 (not (eobp)))
       (push (parsebib--value) val))
     (nreverse val)))
@@ -386,7 +384,7 @@ An assignment is the combination of an identifier, an equal sign
 and a composed value.  A @String definition has exactly one
 assignment, an entry has a potentially unlimited number."
   (if-let* ((id (parsebib--identifier))
-            (_ (parsebib--char "="))
+            (_ (parsebib--chars '(?=)))
             (val (parsebib--composed-value)))
       (cons id val)
     (signal 'parsebib-error (list (format "Malformed key=value assignment at position %d,%d"
@@ -396,7 +394,7 @@ assignment, an entry has a potentially unlimited number."
   "Parse a set of BibTeX assignments.
 A set of assignments makes up the body of an entry."
   (let ((fields (list (parsebib--assignment))))
-    (while (and (parsebib--char "," :noerror)
+    (while (and (parsebib--chars '(?,) :noerror)
                 (not (eobp)))
       ;; There may be a comma after the final field of an entry. If that
       ;; happens, reading another assignment will fail, so we capture the
@@ -410,7 +408,7 @@ A set of assignments makes up the body of an entry."
 (defun parsebib--@comment ()
   "Parse a @Comment.
 Return the contents of the @Comment as a string."
-  (parsebib--char "@")
+  (parsebib--chars '(?@))
   (parsebib--keyword '("comment"))
   (or (parsebib--match '(parsebib--text
                          parsebib--comment-line))
@@ -420,7 +418,7 @@ Return the contents of the @Comment as a string."
 (defun parsebib--@preamble ()
   "Parse a @Preamble.
 Return the contents of the @Preamble as a string."
-  (parsebib--char "@")
+  (parsebib--chars '(?@))
   (parsebib--keyword '("preamble"))
   (or (parsebib--text)
       (signal 'parsebib-error (list (format "Malformed @Preamble at position %d,%d"
@@ -430,11 +428,11 @@ Return the contents of the @Preamble as a string."
   "Parse an @String definition.
 Return the definition as a cons cell of the abbreviation and a
 composed value as a list."
-  (if-let* ((_ (parsebib--char "@"))
+  (if-let* ((_ (parsebib--chars '(?@)))
             (_ (parsebib--keyword '("string")))
-            (open (parsebib--char "{("))
+            (open (parsebib--chars '(?\{ ?\( )))
             (definition (parsebib--assignment))
-            (_ (parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
+            (_ (parsebib--chars (alist-get open '((?\{ ?\}) (?\( ?\)))))))
       definition
     (signal 'parsebib-error (list (format "Malformed @String definition at position %d,%d"
                                           (line-number-at-pos) (current-column))))))
@@ -443,13 +441,13 @@ composed value as a list."
   "Parse a BibTeX database entry.
 Return the entry as an alist of <field . value> pairs, where
 <field> is a string and <value> is a list of strings."
-  (if-let* ((_ (parsebib--char "@"))
+  (if-let* ((_ (parsebib--chars '(?@)))
             (type (parsebib--identifier))
-            (open (parsebib--char "{("))
+            (open (parsebib--chars '(?\{ ?\( )))
             (key (parsebib--identifier))
-            (_ (parsebib--char ","))
+            (_ (parsebib--chars '(?,)))
             (fields (parsebib--fields))
-            (_ (parsebib--char (alist-get open '((?\{ . "}") (?\( . ")"))))))
+            (_ (parsebib--chars (alist-get open '((?\{ ?\}) (?\( ?\)))))))
       (progn (push (cons "=type=" (list type)) fields)
              (push (cons "=key=" (list key)) fields)
              fields)
