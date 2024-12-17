@@ -1174,7 +1174,7 @@ field, a `parsebib-error' is raised."
           ;; Parsing an entry moves point to the end of the entry.  The next
           ;; character must be a comma if there is another entry.  If we're not
           ;; seeing a comma, we've reached the end of the file:
-          (if (not (looking-at-p "[\n-t ]*,"))
+          (if (not (looking-at-p "[\n\t ]*,"))
               (setq continue nil))))))
   entries)
 
