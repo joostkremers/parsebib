@@ -1169,7 +1169,7 @@ field, a `parsebib-error' is raised."
                                 (parsebib-stringify-json entry year-only)
                               entry)
                          entries))
-            (signal 'parsebib-error (list (format "Malformed JSON entry at position %d,%d"
+            (signal 'parsebib-error (list (format "Malformed JSON entry at position (%d,%d)"
                                                   (line-number-at-pos) (current-column)))))
           ;; Parsing an entry moves point to the end of the entry.  The next
           ;; character must be a comma if there is another entry.  If we're not
