@@ -215,7 +215,10 @@ an error, unless NOERROR is non-nil, in which case return nil."
           (char-after)
         (forward-char 1))
     (unless noerror
-      (signal 'parsebib-error (list "Wrong character")))))
+      (signal 'parsebib-error (list (point)
+                                    "Expected one of %s, got `%c'"
+                                    (mapcar #'char-to-string chars)
+                                    (following-char))))))
 
 (defun parsebib--keyword (keywords &optional noerror)
   "Read the keyword following point.
@@ -231,7 +234,10 @@ non-nil, in which case return nil."
             (goto-char (match-end 0))
             keyword))
       (unless noerror
-        (signal 'parsebib-error (list "Wrong keyword"))))))
+        (signal 'parsebib-error (list (point)
+                                      "Expected one of %s, got `%c'"
+                                      keywords
+                                      (char-after)))))))
 
 (defun parsebib--symbol (regexp &optional noerror)
   "Read a symbol and return it.
@@ -244,7 +250,7 @@ NOERROR is non-nil, in which case return nil."
         (goto-char (match-end 0))
         (match-string-no-properties 0))
     (unless noerror
-      (signal 'parsebib-error (list "Illegal identifier")))))
+      (signal 'parsebib-error (list (point) "Illegal identifier")))))
 
 (defun parsebib--seq-delim (open close esc)
   "Read a delimited sequence.
@@ -274,7 +280,10 @@ sequences)."
     (if (= n-braces 0)
         (buffer-substring-no-properties beg (point))
       (goto-char beg) ; So we can determine line and column number.
-      (signal 'parsebib-error (list "Parenthesis error")))))
+      (signal 'parsebib-error (list (point)
+                                    "Opening %c has no closing %c"
+                                    open
+                                    close)))))
 
 (defun parsebib--string (delim esc)
   "Read a string delimited by DELIM.
@@ -295,17 +304,21 @@ character."
     (if (not continue)
         (buffer-substring-no-properties beg (point))
       (goto-char beg) ; So we can determine line and column number.
-      (signal 'parsebib-error (list "Parenthesis error")))))
+      (signal 'parsebib-error (list (point)
+                                    "Opening %c has no closing %c"
+                                    delim
+                                    delim)))))
 
 (defun parsebib--comment-line ()
   "Read a single-line comment and return it."
   (prog1 (buffer-substring-no-properties (point) (pos-eol))
     (forward-line 1)))
 
-(defun parsebib--match (rules)
+(defun parsebib--match (rules &optional noerror)
   "Check if a rule in RULES matches at point.
 Apply the first rule that matches and return the result.  If no
-rule matches, signal an error.
+rule matches, signal an error, unless NOERROR is non-nil, in
+which case return nil.
 
 RULES is a list of symbols, each naming a parsing rule."
   (parsebib--skip-whitespace)
@@ -320,7 +333,8 @@ RULES is a list of symbols, each naming a parsing rule."
           (parsebib-error
            (goto-char start-pos)
            (setq last-error err))))
-      (signal (car last-error) (cdr last-error)))))
+      (unless noerror
+        (signal (car last-error) (cdr last-error))))))
 
 ;;; Parser rules
 
@@ -351,8 +365,10 @@ A value is one component of a composed value (see
 `parsebib--composed-value') and can either be a piece of quoted
 text (i.e., text in double quotes or braces) or a @String
 abbreviation."
-  (parsebib--match '(parsebib--text
-                     parsebib--identifier)))
+  (or (parsebib--match '(parsebib--text
+                         parsebib--identifier)
+                       :noerror)
+      (signal 'parsebib-error (list (point) "Expected {, \" or identifier"))))
 
 (defun parsebib--composed-value ()
   "Parse a BibTeX composed field value.
@@ -374,7 +390,7 @@ assignment, an entry has a potentially unlimited number."
             (_ (parsebib--char '(?=)))
             (val (parsebib--composed-value)))
       (cons id val)
-    (signal 'parsebib-error (list "Malformed key=value assignment"))))
+    (signal 'parsebib-error (list (point) "Malformed key=value assignment"))))
 
 (defun parsebib--fields ()
   "Parse a set of BibTeX assignments.
@@ -397,8 +413,9 @@ Return the contents of the @Comment as a string."
   (parsebib--char '(?@))
   (parsebib--keyword '("comment"))
   (or (parsebib--match '(parsebib--text
-                         parsebib--comment-line))
-      (signal 'parsebib-error "Malformed @Comment at position")))
+                         parsebib--comment-line)
+                       :noerror)
+      (signal 'parsebib-error (list (point) "Malformed @Comment"))))
 
 (defun parsebib--@preamble ()
   "Parse a @Preamble.
@@ -406,7 +423,7 @@ Return the contents of the @Preamble as a string."
   (parsebib--char '(?@))
   (parsebib--keyword '("preamble"))
   (or (parsebib--text)
-      (signal 'parsebib-error (list "Malformed @Preamble"))))
+      (signal 'parsebib-error (list (point) "Malformed @Preamble"))))
 
 (defun parsebib--@string ()
   "Parse an @String definition.
@@ -418,7 +435,7 @@ composed value as a list."
             (definition (parsebib--assignment))
             (_ (parsebib--char (alist-get open '((?\{ ?\}) (?\( ?\)))))))
       definition
-    (signal 'parsebib-error (list "Malformed @String definition"))))
+    (signal 'parsebib-error (list (point) "Malformed @String definition"))))
 
 (defun parsebib--@entry ()
   "Parse a BibTeX database entry.
@@ -434,7 +451,7 @@ Return the entry as an alist of <field . value> pairs, where
       (progn (push (cons "=type=" (list type)) fields)
              (push (cons "=key=" (list key)) fields)
              fields)
-    (signal 'parsebib-error (list "Malformed entry definition"))))
+    (signal 'parsebib-error (list (point) "Malformed entry definition"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level BibTeX/biblatex API ;;
@@ -455,7 +472,7 @@ If no item is found, move point to the end of the buffer."
         (prog1
             (match-string-no-properties 1)
           (goto-char (pos-bol)))
-      (signal 'parsebib-error (list "Could not find BibTeX entry")))))
+      (signal 'parsebib-error (list (point) "Search for BibTeX entry failed")))))
 
 (defun parsebib--get-hashid-string (fields)
   "Create a string from the contents of FIELDS to compute a hash id."
@@ -994,18 +1011,24 @@ FIELDS is nil, all fields are returned."
   ;; Ensure =key= and =type= are in `fields'.
   (if fields
       (setq fields (append (list "=key=" "=type=" fields))))
-  (save-excursion
-    (goto-char (point-min))
-    (cl-loop with entry = nil
-             for entry-type = (parsebib-find-next-item)
-             while entry-type do
-             (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
-               (setq entry (parsebib-read-entry fields strings (not (null strings))))
-               (if entry
-                   (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
-    (when inheritance
-      (parsebib-expand-xrefs entries inheritance))
-    entries))
+  (condition-case err
+      (save-excursion
+        (goto-char (point-min))
+        (cl-loop with entry = nil
+                 for entry-type = (parsebib-find-next-item)
+                 while entry-type do
+                 (unless (member-ignore-case entry-type '("preamble" "string" "comment"))
+                   (setq entry (parsebib-read-entry fields strings (not (null strings))))
+                   (if entry
+                       (puthash (cdr (assoc-string "=key=" entry)) entry entries))))
+        (when inheritance
+          (parsebib-expand-xrefs entries inheritance))
+        entries)
+    (parsebib-error
+     (save-excursion
+       (goto-char (cadr err))
+       (signal (car err) (list (concat (apply #'format (cddr err))
+                                       (format " at position (%d,%d)" (line-number-at-pos) (current-column)))))))))
 
 (defun parsebib-find-bibtex-dialect ()
   "Find the BibTeX dialect of a file if one is set.
@@ -1077,29 +1100,35 @@ ASCII/Unicode characters.  See the variable
   ;; Ensure  =key= and =type= are in `fields'.
   (if fields
       (setq fields (append (list "=key=" "=type=") fields)))
-  (let ((dialect (or (parsebib-find-bibtex-dialect)
-                     bibtex-dialect
-                     'BibTeX))
-        preambles comments)
-    (save-excursion
-      (goto-char (point-min))
-      (cl-loop for item = (parsebib-find-next-item)
-               while item do
-               (cond
-                ((cl-equalp item "string") ; `cl-equalp' compares strings case-insensitively.
-                 (let ((string (parsebib-read-string (if expand-strings strings))))
-                   (if string
-                       (puthash (car string) (cdr string) strings))))
-                ((cl-equalp item "preamble")
-                 (push (parsebib--@preamble) preambles))
-                ((cl-equalp item "comment")
-                 (push (parsebib--@comment) comments))
-                ((stringp item)
-                 (let ((entry (parsebib-read-entry fields (if expand-strings strings) replace-TeX)))
-                   (when entry
-                     (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
-      (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
-      (list entries strings (nreverse preambles) (nreverse comments) dialect))))
+  (condition-case err
+      (let ((dialect (or (parsebib-find-bibtex-dialect)
+                         bibtex-dialect
+                         'BibTeX))
+            preambles comments)
+        (save-excursion
+          (goto-char (point-min))
+          (cl-loop for item = (parsebib-find-next-item)
+                   while item do
+                   (cond
+                    ((cl-equalp item "string") ; `cl-equalp' compares strings case-insensitively.
+                     (let ((string (parsebib-read-string (if expand-strings strings))))
+                       (if string
+                           (puthash (car string) (cdr string) strings))))
+                    ((cl-equalp item "preamble")
+                     (push (parsebib--@preamble) preambles))
+                    ((cl-equalp item "comment")
+                     (push (parsebib--@comment) comments))
+                    ((stringp item)
+                     (let ((entry (parsebib-read-entry fields (if expand-strings strings) replace-TeX)))
+                       (when entry
+                         (puthash (cdr (assoc-string "=key=" entry)) entry entries))))))
+          (when inheritance (parsebib-expand-xrefs entries (if (eq inheritance t) dialect inheritance)))
+          (list entries strings (nreverse preambles) (nreverse comments) dialect)))
+    (parsebib-error
+     (save-excursion
+       (goto-char (cadr err))
+       (signal (car err) (list (concat (apply #'format (cddr err))
+                                       (format " at position (%d,%d)" (line-number-at-pos) (current-column)))))))))
 
 ;;;;;;;;;;;;;;;;;;
 ;; CSL-JSON API ;;
