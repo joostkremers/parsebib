@@ -216,8 +216,7 @@ an error, unless NOERROR is non-nil, in which case return nil."
         (forward-char 1))
     (unless noerror
       (signal 'parsebib-error (list (point)
-                                    "Expected one of %s, got `%c'"
-                                    (mapcar #'char-to-string chars)
+                                    "Invalid character `%c'"
                                     (following-char))))))
 
 (defun parsebib--keyword (keywords &optional noerror)
@@ -235,7 +234,7 @@ non-nil, in which case return nil."
             keyword))
       (unless noerror
         (signal 'parsebib-error (list (point)
-                                      "Expected one of %s, got `%c'"
+                                      "Invalid keyword %s"
                                       keywords
                                       (char-after)))))))
 
