@@ -279,8 +279,7 @@ sequences)."
       (ignore-error 'end-of-buffer (forward-char 1)))
     (if (= n-braces 0)
         (buffer-substring-no-properties beg (point))
-      (goto-char beg) ; So we can determine line and column number.
-      (signal 'parsebib-error (list (point)
+      (signal 'parsebib-error (list beg
                                     "Opening %c has no closing %c"
                                     open
                                     close)))))
@@ -303,8 +302,7 @@ character."
       (forward-char 1))
     (if (not continue)
         (buffer-substring-no-properties beg (point))
-      (goto-char beg) ; So we can determine line and column number.
-      (signal 'parsebib-error (list (point)
+      (signal 'parsebib-error (list beg
                                     "Opening %c has no closing %c"
                                     delim
                                     delim)))))
