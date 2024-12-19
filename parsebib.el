@@ -326,7 +326,6 @@ RULES is a list of symbols, each naming a parsing rule."
       (dolist (rule rules)
         (condition-case err
             (let ((res (funcall rule)))
-              (parsebib--skip-whitespace)
               (throw 'success res))
           (parsebib-error
            (goto-char start-pos)
