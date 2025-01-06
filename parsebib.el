@@ -6,7 +6,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 2014
-;; Version: 6.3
+;; Version: 6.4
 ;; Keywords: text bibtex
 ;; URL: https://github.com/joostkremers/parsebib
 ;; Package-Requires: ((emacs "25.1"))
@@ -53,14 +53,25 @@
 Hash ids can only be created for BibTeX/biblatex files.  The hash
 id is stored in the entry in the special field `=hashid='.")
 
-;; Regexes describing BibTeX identifiers and keys.  Note that while $ ^ & are
-;; valid in BibTeX keys, they may nonetheless be problematic, because they are
-;; special for TeX.  The difference between `parsebib--bibtex-identifier' and
-;; `parsebib--bibtex-key-regexp' are the parentheses (), which are valid in keys.  It may in
-;; fact not be necessary (or desirable) to distinguish the two, but until
-;; someone complains, I'll keep it this way.
+;; Regexes describing BibTeX identifiers and keys.  Note that while $ ^ &
+;; are valid in BibTeX keys, they may nonetheless be problematic, because
+;; they are special for TeX.  Which characters are allowed in keys and
+;; identifiers differs depending on context.  The StackExchange answer at
+;; https://tex.stackexchange.com/questions/96454/using-bibtex-keys-containing-parentheses-with-biber
+;; says that Biber uses a library for parsing .bib files (btparse) that
+;; disallows the following characters in keys;
+;;
+;; " # % ' ( ) , = { }
+;;
+;; Note that parentheses are allowed by BibTex, though, so I won't exclude
+;; them here.
+;;
+;; Also, keys and identifiers (field and @String names) are distinguished,
+;; though I'm not sure that is correct (or even desirable).  I'll keep it
+;; that way until someone complains, though.
+
 (defconst parsebib--bibtex-identifier "[^\"@\\#%',={}() \t\n\f]+" "Regexp describing a licit BibTeX identifier.")
-(defconst parsebib--bibtex-key-regexp "[^\"@\\#%',={} \t\n\f]+" "Regexp describing a licit BibTeX key.")
+(defconst parsebib--bibtex-key-regexp "[^\"#%',={} \t\n\f]+" "Regexp describing a licit BibTeX key.")
 (defconst parsebib--bibtex-entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
 (defvar parsebib-postprocessing-excluded-fields '("file"
