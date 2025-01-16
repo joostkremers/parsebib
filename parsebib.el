@@ -46,13 +46,15 @@
 
 ;;; Code:
 
-(require 'bibtex)
 (require 'cl-lib)
 (eval-and-compile (unless (fboundp 'json-parse-buffer)
                     (require 'json)))
 (defvar json-object-type)
 
 (declare-function json-read "json.el")
+
+(defvar bibtex-dialect)
+(defvar bibtex-dialect-list)
 
 (defvar parsebib-hashid-fields nil
   "List of fields used to create a hash id for each entry.
