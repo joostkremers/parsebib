@@ -858,8 +858,8 @@ See `parsebib-TeX-markup-replacement-alist' and the function
                                      "{" (group-n 2 (0+ (not (any "}")))) (opt "}"))
                                   (group-n 3 letter))))))
     (parsebib--TeX-replace-literal
-     . ,(rx-to-string `(or ,@(mapcar #'car parsebib-TeX-literal-replacement-alist)
-                           (1+ blank)))))
+     . ,(rx (or (regexp (regexp-opt (mapcar #'car parsebib-TeX-literal-replacement-alist)))
+                (1+ blank)))))
   "Alist of replacements and strings for TeX markup.
 This is used in `parsebib-clean-TeX-markup' to make TeX markup more
 suitable for display.  Each item in the list consists of a replacement
