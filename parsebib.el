@@ -710,10 +710,6 @@ markup for bold text."
     ('org (concat "*" str "*"))
     (_ str)))
 
-(defun parsebib--convert-tex-small-caps (str)
-  "Return STR capitalised."
-  (upcase str))
-
 (defvar parsebib-TeX-command-replacement-alist
   '(("ddag"               . "\N{DOUBLE DAGGER}")
     ("textdaggerdbl"      . "\N{DOUBLE DAGGER}")
@@ -763,7 +759,7 @@ markup for bold text."
     ("textit" . parsebib--convert-tex-italics)
     ("emph"   . parsebib--convert-tex-italics)
     ("textbf" . parsebib--convert-tex-bold)
-    ("textsc" . parsebib--convert-tex-small-caps))
+    ("textsc" . upcase))
   "An alist of <command>-<replacement> pairs for LaTeX commands.
 <command> is the name of a TeX or LaTeX command (without
 backslash), <replacement> is the string with which it is
