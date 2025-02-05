@@ -196,9 +196,7 @@ combination, the field inherits from the same-name field in the
 cross-referenced entry.  If no inheritance should take place, the
 target field is set to the symbol `none'.")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; BibTeX / biblatex parser ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; BibTeX / biblatex parser
 
 ;;; Parser primitives
 ;;
@@ -468,9 +466,7 @@ Return the entry as an alist of <field . value> pairs, where
              fields)
     (signal 'parsebib-error (list (point) "Malformed entry definition"))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Low-level BibTeX/biblatex API ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Low-level BibTeX/biblatex API
 
 (defun parsebib-find-next-item ()
   "Find the first (potential) BibTeX item following point.
@@ -552,9 +548,7 @@ string's expansion."
 (defalias 'parsebib-read-preamble 'parsebib--@preamble)
 (defalias 'parsebib-read-comment 'parsebib--@comment)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Post-processing stuff ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; Post-processing stuff
 
 (defun parsebib--post-process (field strings replace-TeX)
   "Post-process FIELD.
@@ -682,9 +676,7 @@ for INHERITANCES to be nil."
       nil)
      (t target-field))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Clean up TeX markup ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Clean up TeX markup
 
 (defvar parsebib-TeX-cleanup-target 'display
   "Target for `parsebib-clean-TeX-markup'.
@@ -929,9 +921,7 @@ calling the cdr on the match (if it is a function)."
                               t t))
              finally return string)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; High-level BibTeX/biblatex API ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; High-level BibTeX/biblatex API
 
 (defun parsebib-collect-preambles ()
   "Collect all @Preamble definitions in the current buffer.
@@ -1148,9 +1138,7 @@ ASCII/Unicode characters.  See the variable
        (signal (car err) (list (concat (apply #'format (cddr err))
                                        (format " at position (%d,%d)" (line-number-at-pos) (current-column)))))))))
 
-;;;;;;;;;;;;;;;;;;
-;; CSL-JSON API ;;
-;;;;;;;;;;;;;;;;;;
+;;;; CSL-JSON API
 
 (cl-defun parsebib-parse-json-buffer (&key entries stringify year-only fields)
   "Parse the current buffer and return all CSL-JSON data.
@@ -1387,9 +1375,7 @@ year, a month and a day."
   (parsebib--process-template "{year}{-month}{-day}"
                               (seq-mapn #'cons '(year month day) date-parts)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Format-independent API ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Format-independent API
 
 (cl-defun parsebib-parse (files &key entries strings (display t) fields)
   "Parse one or more bibliography files.
