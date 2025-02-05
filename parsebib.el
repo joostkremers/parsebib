@@ -637,24 +637,25 @@ such an inheritance schema."
   (when (and target-entry source-entry)
     (when (eq inheritance 'biblatex)
       (setq inheritance parsebib--biblatex-inheritances))
-    (let* ((inheritable-fields
+    (let* ((source-type (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b"))
+           (target-type (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b"))
+           (for-all-types (nth 2 (assoc-string "all" inheritance)))
+           (inheritable-fields
             (unless (eq inheritance 'BibTeX)
               (append
                (apply #'append (mapcar #'cl-third
                                        (cl-remove-if-not
                                         (lambda (elem)
-                                          (and (string-match-p (concat "\\b" (cdr (assoc-string "=type=" source-entry)) "\\b")
-                                                               (cl-first elem))
-                                               (string-match-p (concat "\\b" (cdr (assoc-string "=type=" target-entry)) "\\b")
-                                                               (cl-second elem))))
+                                          (and (string-match-p source-type (nth 0 elem))
+                                               (string-match-p target-type (nth 1 elem))))
                                         inheritance)))
-               (cl-third (assoc-string "all" inheritance)))))
-           (new-fields (delq nil (mapcar (lambda (field)
-                                           (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
-                                             (if (and target-field
-                                                      (not (assoc-string target-field target-entry 'case-fold)))
-                                                 (cons target-field (cdr field)))))
-                                         source-entry))))
+               for-all-types)))
+           (new-fields (mapcan (lambda (field)
+                                 (let ((target-field (parsebib--get-target-field (car field) inheritable-fields)))
+                                   (if (and target-field
+                                            (not (assoc-string target-field target-entry 'case-fold)))
+                                       (list (cons target-field (cdr field))))))
+                               source-entry)))
       (append target-entry new-fields))))
 
 (defun parsebib--get-target-field (source-field inheritances)
