@@ -683,9 +683,10 @@ for INHERITANCES to be nil."
   "Target for `parsebib-clean-TeX-markup'.
 This variable affects the output of the functions that convert
 LaTeX font commands \\textbf, \\textit, and \\emph.  Its value
-should be one of the symbols `display', `markdown', `org' or `plain'.
-See `parsebib--convert-tex-italics' and `parsebib--convert-tex-bold'
-for details.")
+should be one of the symbols `display', `markdown' `org' or
+`plain'.  Any other value is treated as a synonym for `plain'.
+See `parsebib--convert-tex-italics' and
+`parsebib--convert-tex-bold' for details.")
 
 (defun parsebib--convert-tex-italics (str)
   "Return STR converted to italic face.
@@ -696,7 +697,7 @@ markup for italic text."
     ('display (propertize str 'face 'italic))
     ('markdown (concat "*" str "*"))
     ('org (concat "/" str "/"))
-    ('plain str)))
+    (_ str)))
 
 (defun parsebib--convert-tex-bold (str)
   "Return STR converted to bold face.
@@ -707,7 +708,7 @@ markup for bold text."
     ('display (propertize str 'face 'bold))
     ('markdown (concat "**" str "**"))
     ('org (concat "*" str "*"))
-    ('plain str)))
+    (_ str)))
 
 (defun parsebib--convert-tex-small-caps (str)
   "Return STR capitalised."
