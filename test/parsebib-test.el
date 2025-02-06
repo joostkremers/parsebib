@@ -448,6 +448,27 @@
                           nil nil #'equal)))
            "/Users/xxxx/Zotero/storage/ZJVUZD8F/Ahn et al. - Identifying On-Off-CPU Bottlenecks Together with Blocked Samples  USENIX.pdf")))
 
+;;; Test inheritance
+(ert-deftest parsebib-test-parse-bib-buffer-biblatex-inheritance ()
+  (should (equal
+           (with-temp-buffer
+             (insert
+              "@InCollection{Ackema:Neeleman2002,\n"
+	      "pages = {219-256},\n"
+	      "title = {Effects of Short-Term Storage in Processing Rightward Movement},\n"
+	      "crossref = {Nooteboom:Weerman:Wijnen},\n"
+	      "author = {Ackema, Peter and Neeleman, Ad}}\n"
+              "\n"
+              "@Collection{Nooteboom:Weerman:Wijnen,\n"
+	      "  year = {2002},\n"
+	      "  publisher = Klw,\n"
+	      "  title = {Storage and Computation in the Language Faculty},\n"
+	      "  editor = {Nooteboom, Sieb and Weerman, Fred and Wijnen, Frank}}\n")
+             (let* ((results (parsebib-parse-bib-buffer :inheritance 'biblatex)))
+               (alist-get "booktitle" (gethash "Ackema:Neeleman2002" (car results))
+                          nil nil #'equal)))
+           "{Storage and Computation in the Language Faculty}")))
+
 ;;; Test the RDP
 (ert-deftest parsebib-test-@comment ()
   (should (equal
