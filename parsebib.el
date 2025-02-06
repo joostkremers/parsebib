@@ -487,14 +487,13 @@ If no item is found, move point to the end of the buffer."
 
 (defun parsebib--get-hashid-string (fields)
   "Create a string from the contents of FIELDS to compute a hash id."
-  (cl-loop
-   for field in parsebib-hashid-fields
-   collect (or
-            ;; Remove braces {}.
-            (replace-regexp-in-string "^{\\|}$" "" (cdr (assoc-string field fields 'case-fold)))
-            "")
-   into hashid-fields
-   finally return (mapconcat #'identity hashid-fields "")))
+  (cl-loop for field in parsebib-hashid-fields
+           collect (or
+                    ;; Remove braces {}.
+                    (replace-regexp-in-string "^{\\|}$" "" (cdr (assoc-string field fields 'case-fold)))
+                    "")
+           into hashid-fields
+           finally return (mapconcat #'identity hashid-fields "")))
 
 (defun parsebib-read-entry (&optional fields strings replace-TeX)
   "Read a BibTeX entry starting at point.
