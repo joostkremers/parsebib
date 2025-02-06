@@ -927,9 +927,9 @@ Return a list of strings, each string a separate @Preamble."
     (goto-char (point-min))
     (let (res)
       (cl-loop for item = (parsebib-find-next-item)
-               while item do
-               (when (cl-equalp item "preamble")
-                 (push (parsebib--@preamble) res)))
+               while (and item
+                          (cl-equalp item "preamble"))
+               do (push (parsebib--@preamble) res))
       (nreverse res))))
 
 (defun parsebib-collect-comments ()
@@ -939,9 +939,9 @@ Return a list of strings, each string a separate @Comment."
     (goto-char (point-min))
     (let (res)
       (cl-loop for item = (parsebib-find-next-item)
-               while item do
-               (when (cl-equalp item "comment")
-                 (push (parsebib--@comment) res)))
+               while (and item
+                          (cl-equalp item "comment"))
+               do (push (parsebib--@comment) res))
       (nreverse (delq nil res)))))
 
 (cl-defun parsebib-collect-strings (&key strings expand-strings)
@@ -959,10 +959,11 @@ STRINGS."
     (goto-char (point-min))
     (cl-loop with string = nil
              for item = (parsebib-find-next-item)
-             while item do
-             (when (cl-equalp item "string")
-               (setq string (parsebib-read-string (if expand-strings strings)))
-               (puthash (car string) (cdr string) strings)))
+             while (and item
+                        (cl-equalp item "string"))
+             do
+             (setq string (parsebib-read-string (if expand-strings strings)))
+             (puthash (car string) (cdr string) strings))
     strings))
 
 (cl-defun parsebib-collect-bib-entries (&key entries strings inheritance fields)
