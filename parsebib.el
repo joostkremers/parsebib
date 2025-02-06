@@ -1216,11 +1216,10 @@ field, a `parsebib-error' is raised."
 ENTRY is a CSL-JSON entry in the form of an alist.  ENTRY is
 modified in place.  Return value is ENTRY.  If YEAR-ONLY is
 non-nil, date fields are shortened to just the year."
-  (mapc (lambda (field)
-          (unless (stringp (alist-get field entry))
-            (setf (alist-get field entry)
-                  (parsebib-stringify-json-field (assq field entry) year-only))))
-        (mapcar #'car entry))
+  (dolist (field entry)
+    (unless (stringp (alist-get (car field) entry))
+      (setf (alist-get (car field) entry)
+            (parsebib-stringify-json-field (assq (car field) entry) year-only))))
   entry)
 
 (defvar parsebib--json-name-fields  '(author
@@ -1423,24 +1422,23 @@ details.  If FIELDS is nil, all fields are returned."
       (setq strings (make-hash-table :test #'equal)))
   (when (stringp files)
     (setq files (list files)))
-  (mapc (lambda (file)
-          (with-temp-buffer
-            (insert-file-contents file)
-            (cond
-             ((string= (file-name-extension file t) ".bib")
-              (parsebib-parse-bib-buffer :entries entries
-                                         :strings strings
-                                         :expand-strings display
-                                         :inheritance display
-                                         :fields fields
-                                         :replace-TeX display))
-             ((string= (file-name-extension file t) ".json")
-              (parsebib-parse-json-buffer :entries entries
-                                          :stringify display
-                                          :year-only display
-                                          :fields (mapcar #'intern fields)))
-             (t (error "[Parsebib] Not a bibliography file: %s" file)))))
-        files)
+  (dolist (file files)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (cond
+       ((string= (file-name-extension file t) ".bib")
+        (parsebib-parse-bib-buffer :entries entries
+                                   :strings strings
+                                   :expand-strings display
+                                   :inheritance display
+                                   :fields fields
+                                   :replace-TeX display))
+       ((string= (file-name-extension file t) ".json")
+        (parsebib-parse-json-buffer :entries entries
+                                    :stringify display
+                                    :year-only display
+                                    :fields (mapcar #'intern fields)))
+       (t (error "[Parsebib] Not a bibliography file: %s" file)))))
   entries)
 
 (provide 'parsebib)
