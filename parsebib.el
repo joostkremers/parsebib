@@ -87,6 +87,11 @@ id is stored in the entry in the special field `=hashid='.")
                                                   "doi")
   "List of fields that should not be post-processed.")
 
+;; Cleaning up TeX code is very slow, so we restrict it to those fields for
+;; which it makes sense.
+(defvar parsebib-replace-TeX-fields '("author" "editor" "title")
+  "List of fields in which TeX code should be cleaned up.")
+
 (defvar parsebib--biblatex-inheritances '(;; Source                        Target
                                           ("all"                           "all"
                                            (("ids"                         . none)
@@ -572,7 +577,8 @@ value is a cons cell of field name and field value, the value now
 being a single string."
   (let* ((name (car field))
          (value (cdr field))
-         (post-process (not (member-ignore-case name parsebib-postprocessing-excluded-fields))))
+         (post-process (not (member-ignore-case name parsebib-postprocessing-excluded-fields)))
+         (replace-TeX (and replace-TeX (member-ignore-case name parsebib-replace-TeX-fields))))
     (setq value (if strings
                     (string-join (parsebib--post-process-strings value strings post-process))
                   (string-join value " # ")))
