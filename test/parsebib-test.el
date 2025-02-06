@@ -233,7 +233,11 @@
   (should (equal
            (let ((parsebib-TeX-cleanup-target 'org))
              (parsebib-clean-TeX-markup "The verb \\textit{krijgen} as an undative verb."))
-           "The verb /krijgen/ as an undative verb.")))
+           "The verb /krijgen/ as an undative verb."))
+  (should (equal
+           (let ((parsebib-TeX-cleanup-target 'plain))
+             (parsebib-clean-TeX-markup "The verb \\textit{krijgen} as an undative verb."))
+           "The verb krijgen as an undative verb.")))
 
 (ert-deftest parsebib-clean-TeX-markup-emph ()
   (should (equal-including-properties
