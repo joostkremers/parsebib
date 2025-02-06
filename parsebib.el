@@ -6,7 +6,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 2014
-;; Version: 6.4
+;; Version: 6.5
 ;; Keywords: text bibtex
 ;; URL: https://github.com/joostkremers/parsebib
 ;; Package-Requires: ((emacs "25.1"))
@@ -1021,7 +1021,7 @@ FIELDS is nil, all fields are returned."
       (setq entries (make-hash-table :test #'equal)))
   (if (eq inheritance t)
       (setq inheritance (or (parsebib-find-bibtex-dialect)
-                            bibtex-dialect
+                            (and (boundp 'bibtex-dialect) bibtex-dialect)
                             'BibTeX)))
   ;; Ensure =key= and =type= are in `fields'.
   (if fields
@@ -1052,7 +1052,10 @@ This function looks for a local value of the variable
 file.  Return nil if no dialect is found."
   (save-excursion
     (goto-char (point-max))
-    (let ((case-fold-search t))
+    (let ((case-fold-search t)
+          (bibtex-dialect-list (or (and (boundp 'bibtex-dialect-list)
+                                        bibtex-dialect-list)
+                                   '(BibTeX biblatex))))
       (when (re-search-backward (concat parsebib--bibtex-entry-start "comment") (- (point-max) 3000) t)
         (let ((comment (parsebib--@comment)))
           (when (and comment
@@ -1117,7 +1120,7 @@ ASCII/Unicode characters.  See the variable
       (setq fields (append (list "=key=" "=type=") fields)))
   (condition-case err
       (let ((dialect (or (parsebib-find-bibtex-dialect)
-                         bibtex-dialect
+                         (and (boundp 'bibtex-dialect) bibtex-dialect)
                          'BibTeX))
             preambles comments)
         (save-excursion
