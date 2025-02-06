@@ -1269,15 +1269,15 @@ Braced occurrences of the keys in ITEMS are replaced with the
 corresponding values.  Note that the keys in ITEMS should be
 symbols."
   (cl-flet ((create-replacements (match)
-                                 (save-match-data
-                                   (string-match "{\\([^A-Za-z]*\\)\\([A-Za-z][A-za-z-]+\\)\\([^A-Za-z]*\\)}" match)
-                                   (let* ((pre (match-string 1 match))
-                                          (key (match-string 2 match))
-                                          (post (match-string 3 match))
-                                          (value (alist-get (intern key) items)))
-                                     (if value
-                                         (format "%s%s%s" pre value post)
-                                       "")))))
+              (save-match-data
+                (string-match "{\\([^A-Za-z]*\\)\\([A-Za-z][A-za-z-]+\\)\\([^A-Za-z]*\\)}" match)
+                (let* ((pre (match-string 1 match))
+                       (key (match-string 2 match))
+                       (post (match-string 3 match))
+                       (value (alist-get (intern key) items)))
+                  (if value
+                      (format "%s%s%s" pre value post)
+                    "")))))
     (replace-regexp-in-string "{.*?}" #'create-replacements template nil t)))
 
 (defun parsebib-stringify-json-field (field &optional short)
