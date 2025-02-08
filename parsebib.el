@@ -6,7 +6,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 2014
-;; Version: 6.5
+;; Version: 6.6
 ;; Keywords: text bibtex
 ;; URL: https://github.com/joostkremers/parsebib
 ;; Package-Requires: ((emacs "25.1"))
