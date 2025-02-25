@@ -297,7 +297,7 @@ sequences)."
        ((eq (char-after) close)
         (unless (eq (char-before) esc)
           (setq n-braces (1- n-braces)))))
-      (ignore-error 'end-of-buffer (forward-char 1)))
+      (ignore-error end-of-buffer (forward-char 1)))
     (if (= n-braces 0)
         (buffer-substring-no-properties beg (point))
       (signal 'parsebib-error (list beg
@@ -419,7 +419,7 @@ A set of assignments makes up the body of an entry."
       ;; There may be a comma after the final field of an entry. If that
       ;; happens, reading another assignment will fail, so we capture the
       ;; error here.
-      (ignore-error 'parsebib-error
+      (ignore-error parsebib-error
         (push (parsebib--assignment) fields)))
     fields))
 
