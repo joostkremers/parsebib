@@ -1,6 +1,6 @@
 ;;; parsebib.el --- A library for parsing bib files  -*- lexical-binding: t -*-
 
-;; Copyright (c) 2014-2024 Joost Kremers
+;; Copyright (c) 2014-2025 Joost Kremers
 ;; All rights reserved.
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
