@@ -716,4 +716,22 @@
                            (alist-get "abstract" results nil nil #'equal))))
                  (cons "\"Journal（\"" "\"Abstract）\""))))
 
+(ert-deftest parsebib-test-@-in-key ()
+  (should (equal (with-temp-buffer
+                   (insert
+                    "@misc{[@mjnanakar]_2024,\n"
+                    "    type = {{Tweet}},\n"
+                    "    year = {2024},\n"
+                    "    month = dec,\n"
+                    "    journal = {Twitter},\n"
+                    "    urldate = {2024-12-25},\n"
+                    "    langid = {persian},\n"
+                    "    keywords = {/unread}\n"
+                    "}\n")
+                   (goto-char (point-min))
+                   (let ((results (parsebib-read-entry)))
+                     (alist-get "=key=" results nil nil #'equal)))
+                 "[@mjnanakar]_2024")))
+
+
 ;;; parsebib-test.el ends here

@@ -373,6 +373,10 @@ should be read literally."
   "Parse text in double quotes."
   (parsebib--string ?\" ?\\))
 
+(defun parsebib--key ()
+  "Parse a BibTeX key."
+  (parsebib--symbol parsebib--bibtex-key-regexp))
+
 (defun parsebib--identifier ()
   "Parse a BibTeX identifier."
   (parsebib--symbol parsebib--bibtex-identifier))
@@ -462,7 +466,7 @@ Return the entry as an alist of <field . value> pairs, where
   (if-let* ((_ (parsebib--char '(?@)))
             (type (parsebib--identifier))
             (open (parsebib--char '(?\{ ?\( )))
-            (key (parsebib--identifier))
+            (key (parsebib--key))
             (_ (parsebib--char '(?,)))
             (fields (parsebib--fields))
             (_ (parsebib--char (alist-get open '((?\{ ?\}) (?\( ?\)))))))
