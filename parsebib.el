@@ -82,9 +82,7 @@ id is stored in the entry in the special field `=hashid='.")
 (defconst parsebib--bibtex-key-regexp "[^\"#%',={} \t\n\f]+" "Regexp describing a licit BibTeX key.")
 (defconst parsebib--bibtex-entry-start "^[ \t]*@" "Regexp describing the start of an entry.")
 
-(defvar parsebib-postprocessing-excluded-fields '("file"
-                                                  "url"
-                                                  "doi")
+(defvar parsebib-postprocessing-excluded-fields '("file" "url" "doi")
   "List of fields that should not be post-processed.")
 
 ;; Cleaning up TeX code is very slow, so we restrict it to those fields for
