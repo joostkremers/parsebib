@@ -71,7 +71,7 @@ id is stored in the entry in the special field `=hashid='.")
 ;;
 ;; " # % ' ( ) , = { }
 ;;
-;; Note that parentheses are allowed by BibTex, though, so I won't exclude
+;; Note that parentheses are allowed by BibTeX, though, so I won't exclude
 ;; them here.
 ;;
 ;; Also, keys and identifiers (field and @String names) are distinguished,
@@ -850,18 +850,17 @@ See `parsebib-TeX-markup-replacement-alist' and the function
 
 (defvar parsebib-TeX-markup-replacement-alist
   `((parsebib--TeX-replace-command-or-accent
-     ;; This regexp matches any latex command i.e. anything that
-     ;; starts with a backslash. The name of the command which
-     ;; is either a string of alphabetic characters or a single
-     ;; non-alphabetic character is captured by group 1. The command
-     ;; can have a mandatory argument enclosed by braces which is
-     ;; captured by group 2. If the command has no arguments in
-     ;; brackets or braces, the first non-white space letter after
-     ;; the command is captured in group 3. This is to be able to deal
-     ;; with accents.
-     ;; Note that the capturing of arguments in braces is imperfect,
-     ;; because doing it properly requires sexp parsing. It will fail
-     ;; for cases like \command{\anothercommand{an arg}some text}.
+     ;; This regexp matches any latex command, i.e., anything that starts
+     ;; with a backslash. The name of the command, which is either a string
+     ;; of alphabetic characters or a single non-alphabetic character, is
+     ;; captured by group 1. The command can have a mandatory argument
+     ;; enclosed by braces which is captured by group 2. If the command has
+     ;; no arguments in brackets or braces, the first non-white space
+     ;; letter after the command is captured in group 3. This is to be able
+     ;; to deal with accents.  Note that the capturing of arguments in
+     ;; braces is imperfect, because doing it properly requires sexp
+     ;; parsing. It will fail for cases like \command{\anothercommand{an
+     ;; arg}some text}.
      . ,(rx "\\" (group-n 1 (or (1+ letter) nonl))
             (: (* blank) (opt (or (: (* (: "[" (* (not (any "]"))) "]"))
                                      "{" (group-n 2 (0+ (not (any "}")))) (opt "}"))
@@ -898,7 +897,7 @@ and `parsebib-TeX-literal-replacement-alist' respectively.")
          ;; and get the replacement.
          (rep (or acc (alist-get cmd parsebib-TeX-command-replacement-alist nil nil #'equal))))
     (cond
-     ;; If replacement is a function call it with the argument.
+     ;; If replacement is a function, call it with the argument.
      ((functionp rep) (funcall rep arg))
      ;; Otherwise combine the replacement with the argument. The order of combination
      ;; depends on whether the command is an accent or not.
