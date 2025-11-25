@@ -1,4 +1,4 @@
-;;; parsebib-test.el --- Tests for parsebib
+;;; parsebib-test.el --- Tests for parsebib  -*- lexical-binding: t -*-
 
 (require 'parsebib)
 
