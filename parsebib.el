@@ -1045,6 +1045,10 @@ FIELDS is nil, all fields are returned."
 This function looks for a local value of the variable
 `bibtex-dialect' in the local variable block at the end of the
 file.  Return nil if no dialect is found."
+  ;; We only want to find the value of `bibtex-dialect'; we don't want to
+  ;; set the variable, nor do we want to set any other file-local
+  ;; variables, and we also don't want to activate `bibtex-mode'.  All of
+  ;; this means that `hack-local-variables' is a non-starter.
   (save-excursion
     (goto-char (point-max))
     (let ((case-fold-search t)
