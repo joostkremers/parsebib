@@ -18,11 +18,11 @@ Although both are bibliography file formats, there are obviously differences bet
 
 Especially relevant for the purpose of this library is that there are differences in the format of the data returned for the two types of files. For both formats, the bibliographic data is returned as a hash table. In this hash table, each entry is stored under its entry key (which is the `id` field in CSL-JSON) as an alist of `(<field> . <value>)` pairs. In BibTeX data, `<field>` is a string and field names are case-insensitive, so you may have `"Author"` or `"author"`, and both may occur in a single `.bib` file. Furthermore, `<value>` is always a string.
 
-In CSL-JSON data, the format of the alist is slightly different: `<field>` is not a string but a symbol and the symbol name is case-sensitive. The CSL-JSON standard describes which field names are lower case (most are) and which are upper case (`ISBN`, `DOI`, etc.) Furthermore, the `<value>` part of the alist items may be a string, a number or a vector, though when parsing a `.json` file, you can have `parsebib` convert all values to strings.
+In CSL-JSON data, the format of the alist is slightly different: `<field>` is not a string but a symbol and the symbol name is case-sensitive. The CSL-JSON standard describes which field names are lower case (most are) and which are upper case (`ISBN`, `DOI`, etc.) Furthermore, the `<value>` part of the alist items may be a string, a number or a vector. (Although, as mentioned above, when parsing a `.json` file, you can have `parsebib` convert all values to strings.)
 
 You can access the data in an entry's alist with `assoc` or `alist-get`, but in order to accommodate for the differences in the type of field names, you may want to use `assoc-string` instead, which generalises over symbols and strings and has a `case-fold` argument.
 
-Another thing to note is that in BibTeX data, the type and key of an entry are stored in the entry's alist under `=type=` and `=key=`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. While some of the core information on an entry is available in fields with the same name in both formats (esp. author, editor and title), most fields are named differently (i.e.., the `year` field in BibTeX corresponds to the `issued` field in CSL-JSON).
+Another thing to note is that in BibTeX data, the type and key of an entry are stored in the entry's alist under `"=type="` and `"=key="`, while the same information is available in CSL-JSON data under `type` and `id`, respectively. While some of the core information on an entry is available in fields with the same name in both formats (esp. author, editor and title), most fields are named differently (i.e.., the `year` field in BibTeX corresponds to the `issued` field in CSL-JSON).
 
 One last difference to note is that the general buffer-parsing functions, `parsebib-parse-bib-buffer` and `parsebib-parse-json-buffer` do not have the same type of return value. See the function descriptions below for details.
 
@@ -48,7 +48,7 @@ In addition to this post-processing, `parsebib` can resolve cross-references. Th
 
 Expanding `@Strings` and resolving cross-references can also be done across files, by passing the result of parsing one file as arguments when parsing the next file. Details are discussed below.
 
-Note that if you wish to resolve cross-references, it is usually also necessary to expand `@String` abbreviations, because the `crossref` field may contain such an abbreviation. Resolving such a cross-reference will not work unless the abbreviation is expanded.
+Note that if you wish to resolve cross-references, it is usually also necessary to expand `@String` abbreviations, because the `crossref` field may contain such abbreviations. Resolving such a cross-reference will not work unless the abbreviation is expanded.
 
 When parsing a bibliography file for display, one may not be interested in all the data of each entry. The higher-level API functions can therefore take a list of fields to be read and included in the results. Fields not in this list are ignored, except for the `=key=` and `=type=` fields, which are always included.
 
@@ -64,9 +64,9 @@ The higher-level API consists of functions that read and return all items of a s
 
 Collect all entries in the current buffer and return them as a hash table, where the keys correspond to the BibTeX keys and the values are alists consisting of `(<field> . <value>)` pairs of the relevant entry. In this alist, the BibTeX key and the entry type are stored under `=key=` and `=type=`, respectively. Note that both `<field>` and `<value>` are strings. 
 
-The argument `entries` can be used to pass a (possibly non-empty) hash table in which the entries are stored. This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file.
+The argument `entries` can be used to pass a (possibly non-empty) hash table in which the entries are stored (and which also becomes the return value). This can be used to combine multiple `.bib` files into a single hash table, or to update an existing hash table by rereading its `.bib` file.
 
-If the argument `strings` is present, `@String` abbreviations are expanded. `strings` should be a hash table of `@String` definitions as returned by `parsebib-collect-strings`. In addition, sequences of whitespace (space, tab, newline) are collapsed into a single space, field values are unquoted (i.e., the double quotes or braces around them are removed), and TeX markup is prettified or removed. Note that @String
+If the argument `strings` is present, `@String` abbreviations are expanded. `strings` should be a hash table of `@String` definitions as returned by `parsebib-collect-strings`. The `strings` argument also triggers a few additional post-processing steps: sequences of whitespace (space, tab, newline) are collapsed into a single space, field values are unquoted (i.e., the double quotes or braces around them are removed), and TeX markup is prettified or removed. Note that @String
 expansion, collapsing of whitespace and prettifying TeX markup
 are not applied to fields listed in `parsebib-postprocessing-excluded-fields`, but unquoting is.
 
@@ -77,7 +77,7 @@ The argument `fields` is a list of names of the fields that should be included i
 
 #### `parsebib-collect-strings (&key strings expand-strings)` ####
 
-Collect all `@string` definitions in the current buffer and return them as a hash table. The argument `strings` can be used to provide a hash table to store the definitions in. If it is `nil`, a new hash table is created.
+Collect all `@string` definitions in the current buffer and return them as a hash table. The argument `strings` can be used to provide a hash table to store the definitions in (which also becomes the return value). If it is `nil`, a new hash table is created.
 
 The argument `expand-strings` is a boolean value. If non-nil, any abbreviations found in the string definitions are expanded against the `@string` definitions appearing earlier in the `.bib` file and against `@string` definitions in `strings`, if provided.
 
@@ -105,11 +105,11 @@ Collect all BibTeX data in the current buffer. Return a five-element list:
 
 The `<entries>` and `<strings>` are hash tables, `<preambles>` and `<comments>` are lists, `<BibTeX dialect>` is a symbol (either `BibTeX` or `biblatex`) or `nil`.
 
-If the arguments `entries` and `strings` are present, they should be hash tables with `equal` as the `:test` function. They are then used to store the entries and strings, respectively.
+If the arguments `entries` and `strings` are present, they should be hash tables with `equal` as the `:test` function. They are then used to store the entries and strings, respectively. They are also included in the return value.
 
 The argument `expand-strings` functions as the same-name argument in `parsebib-collect-strings`, and the arguments `inheritance` and `fields` function as the same-name arguments in `parsebib-collect-bib-entries`.
 
-If `replace-TeX` in set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. This variable can be `let`-bound around calls to the parsing functions, but note that its value is construed on the basis of the variables  `parsebib-TeX-command-relacement-alist`, `parsebib-TeX-accent-replacement-alist` or `parsebib-TeX-literal-replacement-alist`, so you may want to customise those instead. See their doc strings and the doc string of `parsebib-TeX-markup-replacement-alist` for details.
+If `replace-TeX` is set, (La)TeX markup in field values is replaced with text that is more suitable for display. The variable `parsebib-TeX-markup-replace-alist` determines what exactly is replaced. This variable can be `let`-bound around calls to the parsing functions, but note that its value is construed on the basis of the variables  `parsebib-TeX-command-relacement-alist`, `parsebib-TeX-accent-replacement-alist` or `parsebib-TeX-literal-replacement-alist`, so you may want to customise those instead. See their doc strings and the doc string of `parsebib-TeX-markup-replacement-alist` for details.
 
 Note that `parsebib-parse-bib-buffer` only makes one pass through the buffer. It is therefore a bit faster than calling all the `parsebib-collect-*` functions above in a row, since that would require making four passes through the buffer.
 
@@ -135,8 +135,6 @@ This function can be useful if you use the lower-level API to parse `.bib` files
 ### Lower-level API ###
 
 The lower-level API consists of functions that do the actual reading of a BibTeX item. Unlike the higher-level API, the functions here are dependent on the position of `point`. They are meant to be used in a `while` loop in which `parsebib-find-next-item` is used to move `point` to the next item and then use one of the `parsebib-read-*` functions to read the contents of the item.
-
-All functions here take an optional position argument, which is the position in the buffer from which they should start reading. The default value is `(point)`.
 
 
 #### `parsebib-find-next-item ()` ####
